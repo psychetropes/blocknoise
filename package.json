@@ -1,0 +1,17 @@
+{
+  "name": "blocknoise",
+  "private": true,
+  "workspaces": [
+    "app",
+    "server"
+  ],
+  "scripts": {
+    "app": "npm run --workspace=app",
+    "server": "npm run --workspace=server",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

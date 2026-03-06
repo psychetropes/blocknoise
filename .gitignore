@@ -1,0 +1,52 @@
+# dependencies
+node_modules/
+
+# env files
+.env
+.env.local
+.env.production
+
+# expo
+.expo/
+dist/
+
+# android
+app/android/build/
+app/android/.gradle/
+app/android/app/build/
+app/android/local.properties
+*.keystore
+*.jks
+
+# ios (not used but exclude anyway)
+app/ios/
+
+# eas
+.eas/
+
+# ide
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+
+# typescript
+*.tsbuildinfo
+
+# metro
+.metro-health-check*
+
+# claude code
+.claude/
+
+# misc
+*.apk
+*.aab

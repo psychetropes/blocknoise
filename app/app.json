@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "blocknoise",
+    "slug": "blocknoise",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["android"],
+    "android": {
+      "package": "xyz.blocknoise.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#080A0C"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
