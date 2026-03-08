@@ -7,6 +7,7 @@ import { resolveArweaveUrl } from '../utils/arweave';
 interface LeaderboardEntry {
   id: string;
   wallet_address: string;
+  display_name: string | null;
   arweave_url: string;
   tier: 'standard' | 'pro';
   genre: string;
@@ -26,6 +27,7 @@ export function LeaderboardRow({ entry, rank, onVote, currentWallet }: Leaderboa
   const [expanded, setExpanded] = useState(false);
 
   const shortWallet = `${entry.wallet_address.slice(0, 4)}...${entry.wallet_address.slice(-4)}`;
+  const displayLabel = entry.display_name ?? shortWallet;
   const isOwnEntry = currentWallet === entry.wallet_address;
 
   return (
@@ -37,7 +39,7 @@ export function LeaderboardRow({ entry, rank, onVote, currentWallet }: Leaderboa
         <Text style={styles.rank}>#{rank}</Text>
         <View style={styles.info}>
           <View style={styles.nameRow}>
-            <Text style={styles.wallet}>{shortWallet}</Text>
+            <Text style={styles.wallet}>{displayLabel}</Text>
             <Text style={styles.catalogNumber}>#blocknoise#{entry.catalog_number}</Text>
             {entry.tier === 'pro' && (
               <Text style={styles.proBadge}>pro</Text>

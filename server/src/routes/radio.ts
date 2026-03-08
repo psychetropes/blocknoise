@@ -18,7 +18,7 @@ router.get('/', async (_req: Request, res: Response) => {
     // fetch leaderboard-ordered playlist for seeker radio
     const { data, error } = await supabase
       .from('leaderboard')
-      .select('id, wallet_address, arweave_url, tier, genre, stem_urls, spatial_path, catalog_number')
+      .select('id, wallet_address, display_name, arweave_url, tier, genre, stem_urls, spatial_path, catalog_number')
       .order('score', { ascending: false });
 
     if (error) throw error;

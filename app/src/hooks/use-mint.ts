@@ -7,6 +7,7 @@ import { fetchPrices } from '../services/pricing';
 interface MintResult {
   id: string;
   catalogNumber: number;
+  displayName: string | null;
   mintAddress: string;
   arweaveUrl: string;
   metadataUrl: string;

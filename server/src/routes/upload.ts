@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import Irys from '@irys/sdk';
 import { getCachedAudio, clearCachedAudio } from '../audio-cache';
+import { reverseSnsLookup } from '../sns';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ interface UploadBody {
   genre: string;
   txSignature: string;
   spatialPath?: unknown;
+  displayName?: string;
 }
 
 async function getIrys(): Promise<Irys> {
@@ -126,7 +128,7 @@ async function verifyPayment(
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  const { walletAddress, tier, genre, txSignature, spatialPath } =
+  const { walletAddress, tier, genre, txSignature, spatialPath, displayName } =
     req.body as UploadBody;
 
   if (!walletAddress || !tier || !genre || !txSignature) {
@@ -178,6 +180,9 @@ router.post('/', async (req: Request, res: Response) => {
     if (seqError) throw new Error(`failed to allocate catalog number: ${seqError.message}`);
     const catalogNumber = Number(seqRow);
 
+    // resolve .skr / .sol display name — best-effort, never blocks minting
+    const snsName = displayName ?? await reverseSnsLookup(walletAddress);
+
     // upload audio stems to arweave via irys
     let stemArweaveTxIds: string[] = [];
     let arweaveTxId: string;
@@ -207,11 +212,12 @@ router.post('/', async (req: Request, res: Response) => {
 
     // build nft metadata — catalog number is permanent on arweave
     const walletShort = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
+    const displayLabel = snsName ?? walletShort;
     const stemUrls = stemArweaveTxIds.map((id) => `ar://${id}`);
 
     const metadata = {
-      name: `blocknoise #${catalogNumber} — ${walletShort}`,
-      description: `unique sound identifier #${catalogNumber} generated from solana wallet ${walletAddress}. part of the blocknoise research project — a psyché tropes imprint.`,
+      name: `#blocknoise#${catalogNumber} — ${displayLabel}`,
+      description: `unique sound identifier #blocknoise#${catalogNumber} generated from solana wallet ${walletAddress}. part of the blocknoise research project — a psyché tropes imprint.`,
       image: 'https://blocknoise.xyz/cover.png',
       animation_url: `ar://${arweaveTxId}`,
       external_url: 'https://blocknoise.xyz',
@@ -221,6 +227,7 @@ router.post('/', async (req: Request, res: Response) => {
         { trait_type: 'genre', value: genre },
         { trait_type: 'season', value: '1' },
         { trait_type: 'wallet', value: walletAddress },
+        ...(snsName ? [{ trait_type: 'domain', value: snsName }] : []),
       ],
       properties: {
         files:
@@ -247,7 +254,7 @@ router.post('/', async (req: Request, res: Response) => {
     const arweaveUrl = `ar://${arweaveTxId}`;
     const metadataUrl = `ar://${metadataTxId}`;
 
-    // save to supabase with pre-allocated catalog number
+    // save to supabase with pre-allocated catalog number + display name
     const { data, error } = await supabase
       .from('usis')
       .insert({
@@ -260,8 +267,9 @@ router.post('/', async (req: Request, res: Response) => {
         spatial_path: spatialPath ?? null,
         stem_urls: stemUrls.length > 0 ? stemUrls : null,
         catalog_number: catalogNumber,
+        display_name: snsName ?? null,
       })
-      .select('*, catalog_number')
+      .select('*, catalog_number, display_name')
       .single();
 
     if (error) throw error;
@@ -272,6 +280,7 @@ router.post('/', async (req: Request, res: Response) => {
     res.json({
       id: data.id,
       catalogNumber: data.catalog_number,
+      displayName: data.display_name ?? null,
       mintAddress: txSignature,
       arweaveUrl,
       metadataUrl,

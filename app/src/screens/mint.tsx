@@ -47,9 +47,12 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
     const result = await mint(selectedPayment, spatialPath);
 
     if (result) {
+      const label = result.displayName
+        ? `#blocknoise#${result.catalogNumber} — ${result.displayName}`
+        : `#blocknoise#${result.catalogNumber}`;
       Alert.alert(
         'minted!',
-        `#blocknoise#${result.catalogNumber} — your ${generation.tier} usi has been permanently stored on arweave.`,
+        `${label} — your ${generation.tier} usi has been permanently stored on arweave.`,
         [{ text: 'view leaderboard', onPress: () => navigation.navigate('tabs', { screen: 'leaderboard' }) }]
       );
     }

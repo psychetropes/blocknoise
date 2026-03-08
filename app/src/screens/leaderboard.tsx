@@ -8,6 +8,7 @@ import { useAppStore } from '../store';
 interface LeaderboardEntry {
   id: string;
   wallet_address: string;
+  display_name: string | null;
   arweave_url: string;
   tier: 'standard' | 'pro';
   genre: string;

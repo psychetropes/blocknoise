@@ -13,6 +13,7 @@ create table if not exists usis (
   spatial_path     jsonb,
   catalog_number   serial not null,
   stem_urls        text[],
+  display_name     text,
   created_at       timestamptz default now()
 );
 
@@ -37,6 +38,7 @@ create or replace view leaderboard as
   select
     u.id,
     u.wallet_address,
+    u.display_name,
     u.arweave_url,
     u.tier,
     u.genre,
@@ -126,3 +128,5 @@ alter table usis drop constraint if exists usis_wallet_address_key;
 alter table usis add column if not exists catalog_number serial not null;
 -- add stem urls for pro multi-stem tracks
 alter table usis add column if not exists stem_urls text[];
+-- add display name for .skr / .sol domain resolution
+alter table usis add column if not exists display_name text;

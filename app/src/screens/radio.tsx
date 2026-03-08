@@ -15,6 +15,7 @@ import { resolveArweaveUrl, resolveArweaveUrls } from '../utils/arweave';
 
 interface RadioTrack {
   wallet_address: string;
+  display_name: string | null;
   arweave_url: string;
   genre: string;
   tier: 'standard' | 'pro';
@@ -134,7 +135,7 @@ export function RadioScreen() {
         const tracks = data.map((track) => ({
           id: track.id,
           url: resolveArweaveUrl(track.arweave_url),
-          title: `${track.wallet_address.slice(0, 4)}...${track.wallet_address.slice(-4)}`,
+          title: track.display_name ?? `${track.wallet_address.slice(0, 4)}...${track.wallet_address.slice(-4)}`,
           artist: `blocknoise — ${track.genre}`,
           artwork: 'https://blocknoise.xyz/cover.png',
         }));
@@ -204,7 +205,7 @@ export function RadioScreen() {
           <>
             <Text style={styles.nowLabel}>now playing</Text>
             <Text style={styles.walletAddress}>
-              {shortWallet(nowPlaying.wallet_address)}
+              {nowPlaying.display_name ?? shortWallet(nowPlaying.wallet_address)}
             </Text>
             <Text style={styles.catalogLabel}>
               #blocknoise#{nowPlaying.catalog_number}
