@@ -107,6 +107,16 @@ create policy "usis are publicly readable" on usis for select using (true);
 create policy "votes are publicly readable" on votes for select using (true);
 create policy "genres are publicly readable" on genres for select using (true);
 
+-- rpc function: atomically allocate the next catalog number
+-- called by the server before uploading metadata to arweave
+create or replace function next_catalog_number()
+returns bigint
+language sql
+security definer
+as $$
+  select nextval('usis_catalog_number_seq');
+$$;
+
 -- ══════════════════════════════════════════════════════════════
 -- migration: run against existing database (safe to re-run)
 -- ══════════════════════════════════════════════════════════════

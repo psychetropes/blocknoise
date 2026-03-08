@@ -69,7 +69,7 @@ async function verifyPayment(
   connection: Connection,
   txSignature: string,
   walletAddress: string,
-  supabase: ReturnType<typeof createClient>
+  supabase: ReturnType<typeof createClient<any>>
 ): Promise<{ valid: boolean; error?: string }> {
   // check for replay — has this tx signature already been used?
   const { data: existing } = await supabase
@@ -173,8 +173,12 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
+    // pre-allocate catalog number so it's baked into permanent arweave metadata
+    const { data: seqRow, error: seqError } = await supabase.rpc('next_catalog_number');
+    if (seqError) throw new Error(`failed to allocate catalog number: ${seqError.message}`);
+    const catalogNumber = Number(seqRow);
+
     // upload audio stems to arweave via irys
-    // H5 fix: upload in parallel for speed and atomicity
     let stemArweaveTxIds: string[] = [];
     let arweaveTxId: string;
 
@@ -185,6 +189,7 @@ router.post('/', async (req: Request, res: Response) => {
         return uploadToArweave(stemBuffer, 'audio/mpeg', [
           { name: 'Wallet', value: walletAddress },
           { name: 'Tier', value: tier },
+          { name: 'Catalog', value: String(catalogNumber) },
           { name: 'Stem-Index', value: String(i) },
         ]);
       });
@@ -196,20 +201,22 @@ router.post('/', async (req: Request, res: Response) => {
       arweaveTxId = await uploadToArweave(audioBuffer, 'audio/mpeg', [
         { name: 'Wallet', value: walletAddress },
         { name: 'Tier', value: tier },
+        { name: 'Catalog', value: String(catalogNumber) },
       ]);
     }
 
-    // build nft metadata
+    // build nft metadata — catalog number is permanent on arweave
     const walletShort = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
     const stemUrls = stemArweaveTxIds.map((id) => `ar://${id}`);
 
     const metadata = {
-      name: `blocknoise usi — ${walletShort}`,
-      description: `a unique sound identifier generated from solana wallet ${walletAddress}. part of the blocknoise research project — a psyché tropes imprint.`,
+      name: `blocknoise #${catalogNumber} — ${walletShort}`,
+      description: `unique sound identifier #${catalogNumber} generated from solana wallet ${walletAddress}. part of the blocknoise research project — a psyché tropes imprint.`,
       image: 'https://blocknoise.xyz/cover.png',
       animation_url: `ar://${arweaveTxId}`,
       external_url: 'https://blocknoise.xyz',
       attributes: [
+        { trait_type: 'catalog', value: String(catalogNumber) },
         { trait_type: 'tier', value: tier },
         { trait_type: 'genre', value: genre },
         { trait_type: 'season', value: '1' },
@@ -234,12 +241,13 @@ router.post('/', async (req: Request, res: Response) => {
     const metadataTxId = await uploadToArweave(metadataBuffer, 'application/json', [
       { name: 'Wallet', value: walletAddress },
       { name: 'Type', value: 'metadata' },
+      { name: 'Catalog', value: String(catalogNumber) },
     ]);
 
     const arweaveUrl = `ar://${arweaveTxId}`;
     const metadataUrl = `ar://${metadataTxId}`;
 
-    // save to supabase — use txSignature as mint_address for replay protection
+    // save to supabase with pre-allocated catalog number
     const { data, error } = await supabase
       .from('usis')
       .insert({
@@ -251,6 +259,7 @@ router.post('/', async (req: Request, res: Response) => {
         genre,
         spatial_path: spatialPath ?? null,
         stem_urls: stemUrls.length > 0 ? stemUrls : null,
+        catalog_number: catalogNumber,
       })
       .select('*, catalog_number')
       .single();
