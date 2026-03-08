@@ -2,23 +2,27 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 import { useAppStore } from '../store';
+import { BlockCanvas } from '../components/block/block-canvas';
+import { AudioPlayer } from '../components/audio-player';
+import { SpatialAudioBridge } from '../components/block/spatial-audio-bridge';
 
 type SpatialPoint = [number, number, number, number]; // x, y, z, timestamp
 
-interface StemPath {
-  points: SpatialPoint[];
-}
+const DEFAULT_POSITIONS: [number, number, number][] = [
+  [-0.5, 0.3, 0],
+  [0.5, -0.2, 0.3],
+  [0, 0.5, -0.4],
+];
 
 export function BlockMixerScreen({ navigation }: { navigation: any }) {
   const { generation } = useAppStore();
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes
   const [isActive, setIsActive] = useState(false);
-  const [paths, setPaths] = useState<StemPath[]>([
-    { points: [] },
-    { points: [] },
-    { points: [] },
-  ]);
+  const [positions, setPositions] = useState<[number, number, number][]>(DEFAULT_POSITIONS);
+  const [activeStem, setActiveStem] = useState<number | null>(null);
+  const pathsRef = useRef<SpatialPoint[][]>([[], [], []]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef(0);
 
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
@@ -46,37 +50,98 @@ export function BlockMixerScreen({ navigation }: { navigation: any }) {
 
   const handleStart = () => {
     setIsActive(true);
+    startTimeRef.current = Date.now();
   };
+
+  const handleDrag = useCallback(
+    (stemIndex: number, position: [number, number, number]) => {
+      if (!isActive) return;
+
+      setPositions((prev) => {
+        const next = [...prev] as [number, number, number][];
+        next[stemIndex] = position;
+        return next;
+      });
+
+      // record path point
+      const timestamp = Date.now() - startTimeRef.current;
+      pathsRef.current[stemIndex].push([...position, timestamp]);
+    },
+    [isActive]
+  );
 
   const handleLockMix = useCallback(() => {
     setIsActive(false);
+    setActiveStem(null);
     if (timerRef.current) clearInterval(timerRef.current);
+
     // close paths back to origin for seamless loop
-    const closedPaths = paths.map((p) => {
-      if (p.points.length > 0) {
-        const first = p.points[0];
-        return { points: [...p.points, first] };
+    const closedPaths = pathsRef.current.map((path) => {
+      if (path.length > 0) {
+        return [...path, path[0]];
       }
-      return p;
+      return path;
     });
-    setPaths(closedPaths);
+
     navigation.navigate('mint', { spatialPath: closedPaths });
-  }, [paths, navigation]);
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>the block</Text>
-      <Text style={styles.timer}>{formatTime(timeRemaining)}</Text>
-
-      <View style={styles.canvas}>
-        {/* three.js canvas will be rendered here via @react-three/fiber */}
-        <Text style={styles.placeholder}>
-          3d mixer — drag stems through the block
-        </Text>
-        <Text style={styles.stemCount}>
-          {generation.stemUrls.length} stems loaded
-        </Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>the block</Text>
+        <Text style={styles.timer}>{formatTime(timeRemaining)}</Text>
       </View>
+
+      <View style={styles.canvasWrapper}>
+        <BlockCanvas
+          stems={generation.stemUrls}
+          positions={positions}
+          onDrag={handleDrag}
+          isActive={isActive}
+          activeStem={activeStem}
+          onStemSelect={setActiveStem}
+        />
+      </View>
+
+      {/* stem indicators */}
+      <View style={styles.stemRow}>
+        {generation.stemUrls.map((url, i) => (
+          <TouchableOpacity
+            key={i}
+            style={[
+              styles.stemIndicator,
+              activeStem === i && styles.stemIndicatorActive,
+              { borderColor: [theme.cyan, theme.magenta, '#FFD700'][i] },
+            ]}
+            onPress={() => setActiveStem(activeStem === i ? null : i)}
+          >
+            <Text
+              style={[
+                styles.stemLabel,
+                { color: [theme.cyan, theme.magenta, '#FFD700'][i] },
+              ]}
+            >
+              stem {i + 1}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* mini players */}
+      <View style={styles.playersRow}>
+        {generation.stemUrls.map((url, i) => (
+          <View key={i} style={styles.miniPlayer}>
+            <AudioPlayer uri={url} label={`s${i + 1}`} />
+          </View>
+        ))}
+      </View>
+
+      <SpatialAudioBridge
+        stemUrls={generation.stemUrls}
+        positions={positions}
+        isPlaying={isActive}
+      />
 
       {!isActive ? (
         <TouchableOpacity style={styles.startButton} onPress={handleStart}>
@@ -95,61 +160,77 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.bg,
+    padding: 16,
+  },
+  header: {
     alignItems: 'center',
-    padding: 24,
+    marginTop: 16,
+    marginBottom: 8,
   },
   title: {
     fontFamily: 'ABCFavorit-Bold',
-    fontSize: 28,
+    fontSize: 24,
     color: theme.cream,
-    marginTop: 24,
   },
   timer: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 48,
+    fontSize: 40,
     color: theme.cyan,
-    marginVertical: 16,
+    marginTop: 4,
   },
-  canvas: {
+  canvasWrapper: {
     flex: 1,
-    width: '100%',
-    backgroundColor: theme.bg2,
     borderRadius: 12,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: theme.muted2,
+    marginVertical: 8,
+  },
+  stemRow: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 16,
+    gap: 12,
+    marginVertical: 8,
   },
-  placeholder: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 13,
-    color: theme.muted,
-    textAlign: 'center',
+  stemIndicator: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: theme.bg2,
   },
-  stemCount: {
+  stemIndicatorActive: {
+    backgroundColor: theme.bg,
+  },
+  stemLabel: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 11,
-    color: theme.cyan,
-    marginTop: 8,
+  },
+  playersRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  miniPlayer: {
+    flex: 1,
   },
   startButton: {
     backgroundColor: theme.cyan,
-    paddingHorizontal: 48,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 8,
-    marginBottom: 24,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   lockButton: {
     backgroundColor: theme.magenta,
-    paddingHorizontal: 48,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 8,
-    marginBottom: 24,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   buttonText: {
     fontFamily: 'ABCFavorit-Bold',
-    fontSize: 18,
+    fontSize: 16,
     color: theme.bg,
   },
 });

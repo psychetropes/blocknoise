@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, AppState } from 'react-native';
+import TrackPlayer, {
+  State,
+  usePlaybackState,
+  useTrackPlayerEvents,
+  Event,
+  Capability,
+  RepeatMode,
+} from 'react-native-track-player';
 import { theme } from '../theme';
 import { useAppStore } from '../store';
 
-interface NowPlaying {
+interface RadioTrack {
   wallet_address: string;
   arweave_url: string;
   genre: string;
@@ -11,34 +19,111 @@ interface NowPlaying {
   id: string;
 }
 
+let playerInitialized = false;
+
+async function setupPlayer() {
+  if (playerInitialized) return;
+  try {
+    await TrackPlayer.setupPlayer({
+      autoHandleInterruptions: true,
+    });
+    await TrackPlayer.updateOptions({
+      capabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+      ],
+      compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
+      notificationCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
+    });
+    await TrackPlayer.setRepeatMode(RepeatMode.Queue);
+    playerInitialized = true;
+  } catch {
+    // player may already be set up
+    playerInitialized = true;
+  }
+}
+
 export function RadioScreen() {
   const { wallet } = useAppStore();
-  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playlist, setPlaylist] = useState<NowPlaying[]>([]);
+  const playbackState = usePlaybackState();
+  const [playlist, setPlaylist] = useState<RadioTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [waveHeights, setWaveHeights] = useState<number[]>(
+    Array.from({ length: 20 }, () => 8)
+  );
+  const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isPlaying = playbackState.state === State.Playing;
+  const nowPlaying = playlist[currentIndex] ?? null;
 
   useEffect(() => {
-    fetchPlaylist();
+    setupPlayer().then(fetchPlaylist);
+    return () => {
+      if (animRef.current) clearInterval(animRef.current);
+    };
   }, []);
+
+  // animate waveform bars
+  useEffect(() => {
+    if (isPlaying) {
+      animRef.current = setInterval(() => {
+        setWaveHeights(Array.from({ length: 20 }, () => Math.random() * 40 + 8));
+      }, 150);
+    } else {
+      if (animRef.current) clearInterval(animRef.current);
+      setWaveHeights(Array.from({ length: 20 }, () => 8));
+    }
+    return () => {
+      if (animRef.current) clearInterval(animRef.current);
+    };
+  }, [isPlaying]);
+
+  // track change listener
+  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async (event) => {
+    if (event.index !== undefined) {
+      setCurrentIndex(event.index);
+    }
+  });
 
   const fetchPlaylist = async () => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/radio`);
-      const data = await res.json();
+      const data: RadioTrack[] = await res.json();
       setPlaylist(data);
+
       if (data.length > 0) {
-        setNowPlaying(data[0]);
+        await TrackPlayer.reset();
+        const tracks = data.map((track, i) => ({
+          id: track.id,
+          url: track.arweave_url,
+          title: `${track.wallet_address.slice(0, 4)}...${track.wallet_address.slice(-4)}`,
+          artist: `blocknoise — ${track.genre}`,
+          artwork: 'https://blocknoise.xyz/cover.png',
+        }));
+        await TrackPlayer.add(tracks);
       }
     } catch {
       // silent fail
     }
   };
 
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-    // todo: integrate react-native-track-player
+  const handlePlayPause = async () => {
+    if (isPlaying) {
+      await TrackPlayer.pause();
+    } else {
+      await TrackPlayer.play();
+    }
+  };
+
+  const handleNext = async () => {
+    await TrackPlayer.skipToNext();
+  };
+
+  const handlePrev = async () => {
+    await TrackPlayer.skipToPrevious();
   };
 
   const handleVote = async () => {
@@ -68,6 +153,7 @@ export function RadioScreen() {
       <View style={styles.nowPlayingCard}>
         {nowPlaying ? (
           <>
+            <Text style={styles.nowLabel}>now playing</Text>
             <Text style={styles.walletAddress}>
               {shortWallet(nowPlaying.wallet_address)}
             </Text>
@@ -77,17 +163,10 @@ export function RadioScreen() {
             )}
 
             <View style={styles.waveform}>
-              {Array.from({ length: 20 }).map((_, i) => (
+              {waveHeights.map((h, i) => (
                 <View
                   key={i}
-                  style={[
-                    styles.waveBar,
-                    {
-                      height: isPlaying
-                        ? Math.random() * 40 + 8
-                        : 8,
-                    },
-                  ]}
+                  style={[styles.waveBar, { height: h }]}
                 />
               ))}
             </View>
@@ -98,18 +177,32 @@ export function RadioScreen() {
       </View>
 
       <View style={styles.controls}>
+        <TouchableOpacity style={styles.skipButton} onPress={handlePrev}>
+          <Text style={styles.skipText}>prev</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
           <Text style={styles.playButtonText}>
             {isPlaying ? 'pause' : 'play'}
           </Text>
         </TouchableOpacity>
 
-        {nowPlaying && wallet.connected && (
-          <TouchableOpacity style={styles.voteButton} onPress={handleVote}>
-            <Text style={styles.voteButtonText}>upvote</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.skipButton} onPress={handleNext}>
+          <Text style={styles.skipText}>next</Text>
+        </TouchableOpacity>
       </View>
+
+      {nowPlaying && wallet.connected && (
+        <TouchableOpacity style={styles.voteButton} onPress={handleVote}>
+          <Text style={styles.voteButtonText}>upvote</Text>
+        </TouchableOpacity>
+      )}
+
+      <Text style={styles.queueInfo}>
+        {playlist.length > 0
+          ? `${currentIndex + 1} / ${playlist.length} tracks`
+          : 'queue empty'}
+      </Text>
     </View>
   );
 }
@@ -136,6 +229,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.muted2,
+  },
+  nowLabel: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 10,
+    color: theme.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 12,
   },
   walletAddress: {
     fontFamily: 'JetBrainsMono-Regular',
@@ -179,8 +280,18 @@ const styles = StyleSheet.create({
   },
   controls: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
     marginTop: 32,
+  },
+  skipButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  skipText: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 14,
+    color: theme.muted,
   },
   playButton: {
     backgroundColor: theme.cyan,
@@ -195,13 +306,20 @@ const styles = StyleSheet.create({
   },
   voteButton: {
     backgroundColor: theme.magenta,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
     borderRadius: 8,
+    marginTop: 20,
   },
   voteButtonText: {
     fontFamily: 'ABCFavorit-Bold',
-    fontSize: 18,
+    fontSize: 16,
     color: theme.cream,
+  },
+  queueInfo: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 11,
+    color: theme.muted,
+    marginTop: 16,
   },
 });

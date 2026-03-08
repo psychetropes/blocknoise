@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLOCKNOISE — UI Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  @font-face {
+    font-family: 'ABC Solar';
+    src: url('fonts/ABCSolar-Bold-Trial.woff2') format('woff2'),
+         url('fonts/ABCSolar-Bold-Trial.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --black: #0A0A0A;
+    --blue: #0012FF;
+    --white: #F2F0ED;
+    --grey: #666;
+    --dark: #1A1A1A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #050505;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex; gap: 28px; padding: 28px;
+    flex-wrap: wrap; justify-content: center;
+    min-height: 100vh; color: var(--white);
+  }
+
+  /* ── PHONE ── */
+  .phone-wrapper { position: relative; margin-top: 36px; }
+  .phone-label {
+    position: absolute; top: -28px; left: 0;
+    color: var(--grey); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 3px;
+  }
+  .phone {
+    width: 375px; height: 812px;
+    background: var(--blue);
+    overflow: hidden;
+    border: 3px solid var(--black);
+    position: relative; flex-shrink: 0;
+  }
+  .screen {
+    width: 100%; height: 100%;
+    padding: 52px 28px 28px;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* ── TYPOGRAPHY ── */
+  .t-outline {
+    font-family: 'ABC Solar', sans-serif;
+    font-weight: 400; text-transform: uppercase;
+    line-height: 0.9; letter-spacing: 2px;
+    color: var(--white);
+  }
+  .t-outline-black {
+    font-family: 'ABC Solar', sans-serif;
+    font-weight: 400; text-transform: uppercase;
+    line-height: 0.9; letter-spacing: 2px;
+    color: var(--black);
+  }
+  .t-solid {
+    font-family: 'ABC Solar', sans-serif;
+    font-weight: 400; text-transform: uppercase;
+    line-height: 0.95; letter-spacing: 2px;
+    color: var(--white);
+  }
+  .t-num {
+    font-family: 'ABC Solar', sans-serif;
+    font-weight: 400; line-height: 1;
+    letter-spacing: -1px;
+  }
+  .t-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.5;
+    letter-spacing: 0.5px;
+  }
+  .t-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 3px;
+    color: var(--grey);
+  }
+
+  /* ── BLACK BLOCK (full-bleed dark section on blue bg) ── */
+  .black-block {
+    margin: 0 -28px; padding: 28px;
+    width: calc(100% + 56px);
+    background: var(--black); color: var(--white);
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: block; width: 100%;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 13px;
+    text-transform: lowercase; letter-spacing: 2px;
+    text-align: center; cursor: pointer;
+    padding: 20px; transition: all 0.08s;
+  }
+  .btn:active { transform: translateY(2px); }
+  /* white button on blue bg (dinamo) */
+  .btn-w { background: var(--white); color: var(--black); border: none; }
+  /* black button on blue bg */
+  .btn-b { background: var(--black); color: var(--white); border: none; }
+  /* outline button */
+  .btn-o { background: transparent; color: var(--white); border: none; }
+
+  /* ── SPACERS ── */
+  .s8 { height: 8px; flex-shrink: 0; }
+  .s16 { height: 16px; flex-shrink: 0; }
+  .s24 { height: 24px; flex-shrink: 0; }
+  .s32 { height: 32px; flex-shrink: 0; }
+  .s48 { height: 48px; flex-shrink: 0; }
+  .grow { flex: 1; }
+
+  /* ── TIER CARD ── */
+  .tier {
+    margin: 0 -28px; padding: 24px 28px;
+    width: calc(100% + 56px);
+    border-bottom: 3px solid var(--black);
+  }
+  .tier-black { background: var(--black); color: var(--white); }
+  .tier-outline { background: transparent; border: 3px solid var(--black); margin: 0; width: 100%; padding: 24px; }
+
+  /* ── RECENT MINTS ── */
+  .row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.25);
+    font-size: 12px;
+  }
+  .row:last-child { border: none; }
+
+  /* ── AUDIO PLAYER ── */
+  .player {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 0;
+    margin-bottom: 8px;
+  }
+  .play {
+    width: 36px; height: 36px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--black); color: var(--white);
+    border: none; font-size: 12px;
+    cursor: pointer;
+  }
+  .waveform-track { flex: 1; height: 28px; display: flex; align-items: center; gap: 1px; }
+  .waveform-track .bar { flex: 1; background: rgba(0,0,0,0.3); min-width: 2px; }
+  .waveform-track .bar.played { background: var(--white); }
+  /* Vertical waveform for column layout */
+  .waveform-vert { display: flex; flex-direction: column; align-items: center; justify-content: space-between; width: 100%; overflow: hidden; }
+  .waveform-vert .vbar { height: 2px; background: rgba(255,255,255,0.25); max-width: 100%; }
+  .waveform-vert .vbar.played { background: var(--white); }
+  .player-time { font-size: 10px; color: var(--white); }
+  .player-label { font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+  /* ── MIXER ── */
+  .canvas {
+    flex: 1; min-height: 240px;
+    border: 3px solid var(--black);
+    position: relative; overflow: hidden;
+    background: var(--black);
+  }
+  .cube-wireframe {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotateX(15deg) rotateY(25deg);
+    width: 150px; height: 150px; border: 1.5px solid var(--white);
+    transform-style: preserve-3d;
+  }
+  .cube-face { position: absolute; width: 150px; height: 150px; border: 1px solid rgba(255,255,255,0.2); }
+  .cube-face.back { transform: translateZ(-75px); }
+  .cube-face.front { transform: translateZ(75px); background: rgba(255,255,255,0.06); }
+  .cube-face.left { transform: rotateY(-90deg) translateZ(75px); background: rgba(255,255,255,0.03); }
+  .cube-face.right { transform: rotateY(90deg) translateZ(75px); background: rgba(255,255,255,0.1); }
+  .cube-face.top { transform: rotateX(90deg) translateZ(75px); background: rgba(255,255,255,0.12); }
+  .cube-face.bottom { transform: rotateX(-90deg) translateZ(75px); }
+  .dot { position: absolute; width: 16px; height: 16px; background: var(--white); box-shadow: 0 0 16px var(--white), 0 0 32px rgba(255,255,255,0.5); }
+  .dot.d1 { top: 28%; left: 22%; opacity: 1; }
+  .dot.d2 { top: 52%; left: 58%; opacity: 0.7; }
+  .dot.d3 { top: 40%; left: 42%; opacity: 0.5; }
+
+  /* ── TRON MIXER THEME — IMMERSIVE ROOM ── */
+  .mixer-screen {
+    background: #000 !important;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Full-screen 3D room — inset to show black border frame */
+  .tron-room {
+    position: absolute;
+    top: 25px; left: 25px; right: 25px; bottom: 340px;
+    background: #000;
+    overflow: hidden;
+    cursor: crosshair;
+    border: 2px solid rgba(0,18,255,0.25);
+  }
+  /* Vignette */
+  .tron-room::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 45%, transparent 15%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  /* Canvas for 3D wireframe room */
+  #room-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  /* Room border element — subtle inner frame */
+  .tron-room .room-border {
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(0,18,255,0.15);
+    pointer-events: none;
+    z-index: 2;
+  }
+  /* Depth slider — left side, mid section, for left thumb */
+  /* All UI elements float above the room — clicks pass through to room */
+  .mixer-screen > *:not(.tron-room) {
+    position: relative;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .mixer-screen .block-label,
+  .mixer-screen .lfo-shape-btn,
+  .mixer-screen .lfo-slider,
+  .mixer-screen .lfo-mute-btn,
+  .mixer-screen #lock-btn { pointer-events: auto; }
+
+  /* Dots inside the room — size controlled by JS based on depth */
+  .mixer-screen .dot {
+    border-radius: 50%;
+    z-index: 3;
+    transform: translate(-50%, -50%);
+    will-change: left, top, width, height, box-shadow;
+    transition: box-shadow 0.3s, opacity 0.2s;
+  }
+  .mixer-screen .dot.active {
+    opacity: 1;
+    cursor: grab;
+    z-index: 10;
+    background: var(--white);
+    animation: dot-pulse 2s ease-in-out infinite;
+  }
+  .mixer-screen .dot.active.dragging {
+    cursor: grabbing;
+    animation: none;
+  }
+  .mixer-screen .dot.inactive {
+    opacity: 0.3;
+    background: rgba(0,18,255,0.6);
+  }
+  .mixer-screen .dot.locked {
+    opacity: 0.8;
+    cursor: default;
+    background: var(--blue);
+  }
+  @keyframes dot-pulse {
+    0%, 100% { box-shadow: 0 0 16px var(--blue), 0 0 32px rgba(0,18,255,0.6), 0 0 64px rgba(0,18,255,0.25); }
+    50% { box-shadow: 0 0 24px var(--blue), 0 0 48px rgba(0,18,255,0.7), 0 0 96px rgba(0,18,255,0.4); }
+  }
+
+  /* Block label states */
+  .mixer-screen .block-label.selected { color: var(--white) !important; }
+  .mixer-screen .block-label:not(.selected) { color: var(--grey) !important; }
+  .mixer-screen .block-label.locked { color: var(--blue) !important; }
+  .mixer-screen #lock-btn {
+    background: var(--blue);
+    color: var(--white);
+    border: 2px solid #1A1A1A;
+  }
+  .mixer-screen .t-num { color: var(--white) !important; }
+
+  /* ── LFO SECTION ── */
+  .mixer-screen .lfo-section {
+    width: 100%;
+    flex-shrink: 0;
+    margin-bottom: 6px;
+  }
+  .mixer-screen .lfo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .mixer-screen .lfo-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 2px;
+  }
+  .mixer-screen .lfo-block-indicator {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--blue);
+    letter-spacing: 1px;
+  }
+  .mixer-screen .lfo-mute-group {
+    display: flex;
+    gap: 3px;
+  }
+  .mixer-screen .lfo-mute-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 6px;
+    font-weight: 700;
+    letter-spacing: 0;
+    padding: 2px 4px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.25);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .mixer-screen .lfo-mute-btn.muted {
+    background: rgba(255,50,50,0.25);
+    border-color: rgba(255,50,50,0.6);
+    color: rgba(255,50,50,0.9);
+  }
+  .mixer-screen .lfo-columns {
+    display: flex;
+    gap: 4px;
+  }
+  .mixer-screen .lfo-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+  .mixer-screen .lfo-col-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 1px;
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    z-index: 1;
+  }
+  .mixer-screen .lfo-canvas {
+    width: 100%;
+    height: 36px;
+    background: rgba(0,18,255,0.06);
+    border: 1px solid rgba(0,18,255,0.2);
+  }
+  .mixer-screen .lfo-shapes {
+    display: flex;
+    gap: 2px;
+  }
+  .mixer-screen .lfo-shape-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 0;
+    background: transparent;
+    border: 1px solid rgba(0,18,255,0.15);
+    color: rgba(255,255,255,0.3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 6px;
+    font-weight: 700;
+    letter-spacing: 0;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s;
+  }
+  .mixer-screen .lfo-shape-btn:active {
+    transform: scale(0.95);
+  }
+  .mixer-screen .lfo-shape-btn.selected {
+    background: rgba(0,18,255,0.3);
+    border-color: rgba(0,18,255,0.6);
+    color: var(--white);
+  }
+  .mixer-screen .lfo-slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mixer-screen .lfo-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    overflow: hidden;
+  }
+  .mixer-screen .lfo-slider-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 5px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.5px;
+    width: 18px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .mixer-screen .lfo-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    min-width: 0;
+    height: 12px;
+    background: transparent;
+    cursor: pointer;
+    margin: 0;
+    padding: 0 4px;
+  }
+  .mixer-screen .lfo-slider::-webkit-slider-runnable-track {
+    height: 2px;
+    background: rgba(0,18,255,0.2);
+    border-radius: 1px;
+  }
+  .mixer-screen .lfo-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 0;
+    background: rgba(0,18,255,0.6);
+    border: 1px solid rgba(0,18,255,0.9);
+    margin-top: -3px;
+    box-shadow: 0 0 4px rgba(0,18,255,0.4);
+  }
+  .mixer-screen .lfo-slider::-moz-range-track {
+    height: 2px;
+    background: rgba(0,18,255,0.2);
+    border: none;
+    border-radius: 1px;
+  }
+  .mixer-screen .lfo-slider::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    border-radius: 0;
+    background: rgba(0,18,255,0.6);
+    border: 1px solid rgba(0,18,255,0.9);
+    box-shadow: 0 0 4px rgba(0,18,255,0.4);
+  }
+
+  .stem-row { display: flex; gap: 6px; }
+  .stem-btn {
+    flex: 1; padding: 10px; text-align: center;
+    font-family: inherit; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    cursor: pointer; background: transparent;
+    color: var(--white); border: 3px solid var(--black);
+    transition: all 0.08s;
+  }
+  .stem-btn.on { background: var(--black); border-color: var(--black); }
+
+  .mini-row { display: flex; gap: 6px; }
+  .mini-p {
+    flex: 1; display: flex; align-items: center; gap: 6px;
+    padding: 8px; border: 3px solid var(--black); font-size: 10px;
+    background: rgba(0,0,0,0.15);
+  }
+  .mini-play {
+    width: 22px; height: 22px; background: var(--white);
+    border: 2px solid var(--black); color: var(--black);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; cursor: pointer;
+  }
+
+  /* ── GENRE CHIPS ── */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 12px 16px; border: 3px solid var(--black);
+    background: transparent; color: var(--white);
+    font-family: inherit; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 2px; font-weight: 700;
+    cursor: pointer; transition: all 0.08s;
+  }
+  .chip.on { background: var(--black); border-color: var(--black); }
+
+  /* ── PAYMENT ── */
+  .pay-row { display: flex; gap: 8px; }
+  .pay {
+    flex: 1; padding: 16px 10px; text-align: center;
+    border: 3px solid var(--black); background: transparent;
+    font-family: inherit; cursor: pointer; transition: all 0.08s;
+  }
+  .pay.on { background: var(--black); border-color: var(--black); }
+  .pay-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; color: var(--white); }
+  .pay-val { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; display: block; margin-top: 4px; color: var(--white); }
+  .pay-note { font-size: 8px; display: block; margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--white); opacity: 0.5; }
+
+  /* ── LEADERBOARD ── */
+  .lb-list {
+    flex: 1; overflow-y: auto; margin: 0 -4px; padding: 0 4px 24px 4px;
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
+  }
+  .lb-list::-webkit-scrollbar { width: 3px; }
+  .lb-list::-webkit-scrollbar-track { background: transparent; }
+  .lb-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+  .lb-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 2px 0; border-bottom: 1px solid rgba(0,0,0,0.2);
+  }
+  .lb-row:last-of-type { border: none; }
+  .lb-play {
+    font-size: 10px; color: var(--black); flex-shrink: 0; width: 14px; text-align: center;
+    cursor: pointer; line-height: 1;
+  }
+  .lb-rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; font-weight: 700;
+    color: rgba(255,255,255,0.4); width: 16px; text-align: right; flex-shrink: 0;
+  }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-wallet-row { display: flex; align-items: center; gap: 4px; }
+  .lb-wallet { font-size: 8px; font-weight: 700; flex-shrink: 0; }
+  .lb-catalog { font-size: 7px; color: rgba(255,255,255,0.3); flex-shrink: 0; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px; }
+  .lb-wave-row { display: flex; align-items: flex-end; gap: 1px; height: 8px; margin-top: 1px; }
+  .lb-wave-row span { display: block; width: 2px; background: rgba(255,255,255,0.4); flex-shrink: 0; }
+  .lb-meta { font-size: 5px; color: var(--grey); margin-top: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lb-score-col { text-align: right; flex-shrink: 0; margin-left: auto; }
+  .lb-score {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 9px; font-weight: 700; line-height: 1;
+  }
+  .lb-votes { font-size: 5px; color: var(--grey); line-height: 1; }
+  .vote {
+    width: 44px; height: 44px;
+    background: var(--white); border: 3px solid var(--black);
+    color: var(--black); font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-family: inherit;
+  }
+
+  /* ── RADIO ── */
+  .np {
+    border: 3px solid var(--black);
+    padding: 24px; text-align: center;
+    background: rgba(0,0,0,0.15);
+  }
+  .waveform-anim { display: flex; align-items: flex-end; justify-content: center; gap: 4px; height: 48px; margin: 16px 0; }
+  .wave-bar { width: 4px; background: var(--white); animation: wave 0.6s ease-in-out infinite alternate; }
+  @keyframes wave { from { height: 6px; opacity: 0.3; } to { height: 100%; opacity: 1; } }
+  .visualizer-box { position: relative; aspect-ratio: 1; }
+  .visualizer-box canvas { position: relative; z-index: 1; width: 100%; height: 100%; display: block; }
+  #genre-selector .recess-content::-webkit-scrollbar { display: none; }
+  #genre-selector .recess-content {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 80%, transparent 100%);
+  }
+  .genre-item { transition: color 0.15s; }
+  .social-row { display: flex; justify-content: center; align-items: center; gap: 28px; }
+  .social-icon { width: 28px; height: 28px; cursor: pointer; opacity: 0.9; transition: opacity 0.15s; }
+  .social-icon:hover { opacity: 1; }
+
+  .ctrls { display: flex; justify-content: center; align-items: center; gap: 16px; }
+  .ctrl {
+    width: 52px; height: 52px;
+    border: 3px solid var(--black); background: transparent;
+    color: var(--white); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ctrl-main {
+    width: 68px; height: 68px;
+    background: var(--white); border-color: var(--black);
+    color: var(--black); font-size: 22px;
+  }
+
+  /* ── TAB BAR ── */
+  .tabs {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 64px; background: var(--black);
+    border-top: 3px solid var(--black);
+    display: flex; align-items: center; justify-content: space-around;
+  }
+  .tab {
+    text-align: center; font-size: 9px; color: rgba(255,255,255,0.4);
+    text-transform: uppercase; letter-spacing: 2px; font-weight: 700;
+    cursor: pointer;
+  }
+  .tab.on { color: var(--white); }
+  .tab-i { font-size: 18px; margin-bottom: 2px; }
+
+  /* ── RECESS BUTTON ── */
+  .recess-btn {
+    cursor: pointer; position: relative;
+  }
+  .recess-btn .recess-content {
+    /* padding and font-size driven by JS animation */
+  }
+  .recess-btn .recess-glow {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15);
+    opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+  }
+  .recess-btn.selected .recess-glow { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ═══ 1. HOME — DISCONNECTED ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">home // disconnected</div>
+  <div class="phone">
+    <div class="screen" style="padding-bottom: 64px;">
+      <div style="flex: 1;"></div>
+      <div style="text-align: center; display: inline-block; margin: 0 auto;">
+        <div class="t-outline" style="font-size: 68px; text-align: left;">BLOCK</div>
+        <div class="t-outline" style="font-size: 68px; text-align: justify; display: flex; justify-content: space-between;">
+          <span>N</span><span>O</span><span>I</span><span>S</span><span style="margin-right: -3px;">E</span>
+        </div>
+      </div>
+      <div style="flex: 1;"></div>
+      <button class="btn btn-w" style="margin: 28px 0;">connect wallet</button>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 2. HOME — CONNECTED ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">home // connected</div>
+  <div class="phone">
+    <div class="screen" style="padding: 0 0 64px; gap: 0;">
+      <div style="flex: 1; display: flex; flex-direction: column; padding: 28px; gap: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: -4px;">
+          <div class="t-mono" style="font-size: 11px; color: var(--white); font-weight: 700;">8xK2...nR4p</div>
+          <div class="t-label" style="cursor: pointer; color: var(--black);">disconnect</div>
+        </div>
+        <div class="recess-btn" data-tier="standard" style="background: var(--black); font-family: 'JetBrains Mono', monospace; position: relative; flex: 1;">
+          <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+            <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+            <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+            <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+            <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+          </svg>
+          <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--white);">Standard Composition</div>
+              <div style="font-size: 9px; color: var(--grey); letter-spacing: 1px; margin-top: 6px;">1 x 30s looping track</div>
+            </div>
+            <div style="display: flex; gap: 12px; font-size: 10px; color: var(--white);">
+              <div><span style="opacity: 0.5;">USDC</span> <span style="font-weight: 700;">10</span></div>
+              <div><span style="opacity: 0.5;">SOL</span> <span style="font-weight: 700;">0.07</span></div>
+              <div><span style="opacity: 0.5;">SKR</span> <span style="font-weight: 700;">5</span></div>
+            </div>
+          </div>
+          <div class="recess-glow"></div>
+        </div>
+        <div class="recess-btn" data-tier="spatial" style="background: var(--black); font-family: 'JetBrains Mono', monospace; position: relative; flex: 1;">
+          <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+            <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+            <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+            <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+            <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+          </svg>
+          <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--white);">Spatial Composition</div>
+              <div style="font-size: 9px; color: var(--grey); letter-spacing: 1px; margin-top: 6px;">3 x 30s stems + 3D mixer</div>
+            </div>
+            <div style="display: flex; gap: 12px; font-size: 10px; color: var(--white);">
+              <div><span style="opacity: 0.5;">USDC</span> <span style="font-weight: 700;">20</span></div>
+              <div><span style="opacity: 0.5;">SOL</span> <span style="font-weight: 700;">0.14</span></div>
+              <div><span style="opacity: 0.5;">SKR</span> <span style="font-weight: 700;">10</span></div>
+            </div>
+          </div>
+          <div class="recess-glow"></div>
+        </div>
+        <button class="btn btn-w">mint composition</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 3. PAYMENT ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">payment</div>
+  <div class="phone">
+    <div class="screen" style="padding: 0 0 64px; gap: 0;">
+      <div style="flex: 1; display: flex; flex-direction: column; padding: 28px; gap: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: -4px;">
+          <div class="t-mono" style="font-size: 11px; color: var(--white); font-weight: 700;">8xK2...nR4p</div>
+          <div class="t-label" style="cursor: pointer; color: var(--black);">disconnect</div>
+        </div>
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+          <div class="recess-btn" data-pay="usdc" style="background: var(--black); height: 100%; aspect-ratio: 1; position: relative; font-family: 'JetBrains Mono', monospace;">
+            <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+              <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            </svg>
+            <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <span style="font-size: 11px; color: var(--white); opacity: 0.5; text-transform: uppercase; letter-spacing: 2px;">USDC</span>
+              <span style="font-size: 28px; color: var(--white); font-weight: 700; margin-top: 6px;">10.00</span>
+            </div>
+            <div class="recess-glow"></div>
+          </div>
+        </div>
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+          <div class="recess-btn" data-pay="sol" style="background: var(--black); height: 100%; aspect-ratio: 1; position: relative; font-family: 'JetBrains Mono', monospace;">
+            <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+              <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            </svg>
+            <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <span style="font-size: 11px; color: var(--white); opacity: 0.5; text-transform: uppercase; letter-spacing: 2px;">SOL</span>
+              <span style="font-size: 28px; color: var(--white); font-weight: 700; margin-top: 6px;">0.074</span>
+            </div>
+            <div class="recess-glow"></div>
+          </div>
+        </div>
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+          <div class="recess-btn" data-pay="skr" style="background: var(--black); height: 100%; aspect-ratio: 1; position: relative; font-family: 'JetBrains Mono', monospace;">
+            <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+              <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            </svg>
+            <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <span style="font-size: 11px; color: var(--white); opacity: 0.5; text-transform: uppercase; letter-spacing: 2px;">SKR</span>
+              <span style="font-size: 28px; color: var(--white); font-weight: 700; margin-top: 6px;">250</span>
+              <span style="font-size: 8px; color: var(--white); opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;">50% off</span>
+            </div>
+            <div class="recess-glow"></div>
+          </div>
+        </div>
+        <button class="btn btn-w" style="width: 100%;">pay & generate</button>
+      </div>
+    </div>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 4. GENERATE — SPATIAL ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">generate // spatial</div>
+  <div class="phone">
+    <div class="screen" style="padding-top: 28px; padding-bottom: 64px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: -4px;">
+        <div class="t-mono" style="font-size: 11px; color: var(--white); font-weight: 700;">8xK2...nR4p</div>
+        <div class="t-label" style="color: var(--black);">locked</div>
+      </div>
+      <div class="s24"></div>
+      <div class="t-solid" style="font-size: 36px; text-align: center;">Spatial<br>Composition</div>
+      <div class="s8"></div>
+      <div class="t-label" style="text-align: center; color: var(--white); opacity: 0.6;">3 stems generated</div>
+      <div class="s16"></div>
+      <div style="display: flex; gap: 12px; flex: 1;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0;">
+          <div class="recess-btn" data-play="1" style="background: var(--black); width: 100%; aspect-ratio: 1; position: relative;">
+            <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+              <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            </svg>
+            <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center;">
+              <span style="color: var(--white); font-size: 18px;">&#9654;</span>
+            </div>
+            <div class="recess-glow"></div>
+          </div>
+          <div class="t-solid" style="color: var(--white); font-size: 18px; text-align: center; letter-spacing: 0px;">BLOCK1</div>
+          <div class="waveform-vert" id="wf-s1" style="flex: 1;"></div>
+          <div class="t-mono" style="color: var(--white); font-size: 9px; text-align: center;">0:19</div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0;">
+          <div class="recess-btn" data-play="2" style="background: var(--black); width: 100%; aspect-ratio: 1; position: relative;">
+            <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+              <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            </svg>
+            <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center;">
+              <span style="color: var(--white); font-size: 18px;">&#9654;</span>
+            </div>
+            <div class="recess-glow"></div>
+          </div>
+          <div class="t-solid" style="color: var(--white); font-size: 18px; text-align: center; letter-spacing: 0px;">BLOCK2</div>
+          <div class="waveform-vert" id="wf-s2" style="flex: 1;"></div>
+          <div class="t-mono" style="color: var(--white); font-size: 9px; text-align: center;">0:09</div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0;">
+          <div class="recess-btn" data-play="3" style="background: var(--black); width: 100%; aspect-ratio: 1; position: relative;">
+            <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none">
+              <polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/>
+              <polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+              <rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/>
+            </svg>
+            <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center;">
+              <span style="color: var(--white); font-size: 18px;">&#9654;</span>
+            </div>
+            <div class="recess-glow"></div>
+          </div>
+          <div class="t-solid" style="color: var(--white); font-size: 18px; text-align: center; letter-spacing: 0px;">BLOCK3</div>
+          <div class="waveform-vert" id="wf-s3" style="flex: 1;"></div>
+          <div class="t-mono" style="color: var(--white); font-size: 9px; text-align: center;">0:00</div>
+        </div>
+      </div>
+      <div class="s24"></div>
+      <button class="btn btn-w">open block mixer</button>
+      <div class="s24"></div>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 5. BLOCK MIXER ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">the block // mixer</div>
+  <div class="phone">
+    <div class="screen mixer-screen" style="padding-top: 28px; padding-bottom: 64px;">
+      <!-- Immersive 3D room — the user is INSIDE the cube -->
+      <div class="tron-room" id="spatial-canvas">
+        <canvas id="room-canvas"></canvas>
+        <div class="room-border"></div>
+        <!-- Dots — positioned by JS using 3D projection -->
+        <div class="dot d1 active" data-dot="1"></div>
+        <div class="dot d2 inactive" data-dot="2"></div>
+        <div class="dot d3 inactive" data-dot="3"></div>
+      </div>
+      <!-- UI overlay — HUD elements floating over the room -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-top: -4px;">
+        <div class="t-num" id="mixer-timer" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;">5:00</div>
+      </div>
+      <div class="grow"></div>
+      <!-- LFO Section — 3 columns: A→X, B→Y, C→Z -->
+      <div class="lfo-section" id="lfo-section">
+        <div class="lfo-header">
+          <span class="lfo-title">LFO</span>
+          <div class="lfo-mute-group">
+            <button class="lfo-mute-btn" data-mute-block="1" id="mute-btn-1">M1</button>
+            <button class="lfo-mute-btn" data-mute-block="2" id="mute-btn-2">M2</button>
+            <button class="lfo-mute-btn" data-mute-block="3" id="mute-btn-3">M3</button>
+          </div>
+          <span class="lfo-block-indicator" id="lfo-block-indicator">BLOCK1</span>
+        </div>
+        <div class="lfo-columns">
+          <!-- LFO A → X -->
+          <div class="lfo-col" data-lfo="a">
+            <div class="lfo-col-label">X</div>
+            <canvas class="lfo-canvas" id="lfo-canvas-a"></canvas>
+            <div class="lfo-shapes">
+              <button class="lfo-shape-btn selected" data-shape="sine">SIN</button>
+              <button class="lfo-shape-btn" data-shape="tri">TRI</button>
+              <button class="lfo-shape-btn" data-shape="square">SQR</button>
+              <button class="lfo-shape-btn" data-shape="saw">SAW</button>
+            </div>
+            <div class="lfo-slider-group">
+              <div class="lfo-slider-row"><span class="lfo-slider-label">RATE</span><input type="range" class="lfo-slider" data-param="rate" min="0" max="100" value="0"></div>
+              <div class="lfo-slider-row"><span class="lfo-slider-label">DPTH</span><input type="range" class="lfo-slider" data-param="depth" min="0" max="100" value="100"></div>
+            </div>
+          </div>
+          <!-- LFO B → Y -->
+          <div class="lfo-col" data-lfo="b">
+            <div class="lfo-col-label">Y</div>
+            <canvas class="lfo-canvas" id="lfo-canvas-b"></canvas>
+            <div class="lfo-shapes">
+              <button class="lfo-shape-btn selected" data-shape="sine">SIN</button>
+              <button class="lfo-shape-btn" data-shape="tri">TRI</button>
+              <button class="lfo-shape-btn" data-shape="square">SQR</button>
+              <button class="lfo-shape-btn" data-shape="saw">SAW</button>
+            </div>
+            <div class="lfo-slider-group">
+              <div class="lfo-slider-row"><span class="lfo-slider-label">RATE</span><input type="range" class="lfo-slider" data-param="rate" min="0" max="100" value="0"></div>
+              <div class="lfo-slider-row"><span class="lfo-slider-label">DPTH</span><input type="range" class="lfo-slider" data-param="depth" min="0" max="100" value="100"></div>
+            </div>
+          </div>
+          <!-- LFO C → Z -->
+          <div class="lfo-col" data-lfo="c">
+            <div class="lfo-col-label">Z</div>
+            <canvas class="lfo-canvas" id="lfo-canvas-c"></canvas>
+            <div class="lfo-shapes">
+              <button class="lfo-shape-btn selected" data-shape="sine">SIN</button>
+              <button class="lfo-shape-btn" data-shape="tri">TRI</button>
+              <button class="lfo-shape-btn" data-shape="square">SQR</button>
+              <button class="lfo-shape-btn" data-shape="saw">SAW</button>
+            </div>
+            <div class="lfo-slider-group">
+              <div class="lfo-slider-row"><span class="lfo-slider-label">RATE</span><input type="range" class="lfo-slider" data-param="rate" min="0" max="100" value="0"></div>
+              <div class="lfo-slider-row"><span class="lfo-slider-label">DPTH</span><input type="range" class="lfo-slider" data-param="depth" min="0" max="100" value="100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="block-labels" style="display: flex; justify-content: space-between; width: 100%;">
+        <span class="block-label selected" data-block="1" style="font-size: 9px; color: var(--white); font-weight: 700; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; cursor: pointer; padding: 8px 0;">BLOCK1</span>
+        <span class="block-label" data-block="2" style="font-size: 9px; color: var(--grey); font-weight: 700; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; cursor: pointer; padding: 8px 0;">BLOCK2</span>
+        <span class="block-label" data-block="3" style="font-size: 9px; color: var(--grey); font-weight: 700; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; cursor: pointer; padding: 8px 0;">BLOCK3</span>
+      </div>
+      <div class="s8"></div>
+      <button class="btn btn-w" id="lock-btn" style="margin-bottom: 28px;">lock block 1</button>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 6. MINT ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">mint</div>
+  <div class="phone">
+    <div class="screen" style="padding-top: 28px; padding-bottom: 64px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: -4px;">
+        <div class="t-mono" style="font-size: 11px; color: var(--white); font-weight: 700;">8xK2...nR4p</div>
+        <div class="t-label" style="color: var(--black);">locked</div>
+      </div>
+      <div class="s24"></div>
+      <div class="t-solid" style="font-size: 34px; text-align: center;">Catalog Your<br>Composition</div>
+      <div class="s8"></div>
+      <div class="t-mono" style="color: var(--grey); text-align: center; font-size: 12px;">choose a genre</div>
+      <div class="s16"></div>
+      <div class="recess-btn" id="genre-selector" style="background: var(--black); aspect-ratio: 1; position: relative; overflow: hidden;">
+        <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none"><polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/><polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/></svg>
+        <div class="recess-content" style="position: absolute; z-index: 1; top: 5%; bottom: 18%; left: 8%; right: 22%; overflow-y: auto; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 12px 12px 30% 12px; gap: 18px; scrollbar-width: none; -ms-overflow-style: none;">
+          <span data-genre="ambient" class="genre-item" style="font-size: 9px; color: var(--white); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Ambient</span>
+          <span data-genre="drone" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Drone</span>
+          <span data-genre="industrial" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Industrial</span>
+          <span data-genre="noise" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Noise</span>
+          <span data-genre="glitch" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Glitch</span>
+          <span data-genre="dark-ambient" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Dark Ambient</span>
+          <span data-genre="field-recording" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Field Recording</span>
+          <span data-genre="musique-concrete" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Musique Concrète</span>
+          <span data-genre="electroacoustic" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Electroacoustic</span>
+          <span data-genre="sound-art" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Sound Art</span>
+          <span data-genre="lo-fi" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Lo-Fi</span>
+          <span data-genre="harsh-noise" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Harsh Noise</span>
+          <span data-genre="power-electronics" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Power Electronics</span>
+          <span data-genre="tape-music" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Tape Music</span>
+          <span data-genre="generative" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Generative</span>
+          <span data-genre="modular" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Modular</span>
+          <span data-genre="microsound" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Microsound</span>
+          <span data-genre="acousmatic" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Acousmatic</span>
+          <span data-genre="dark-techno" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Dark Techno</span>
+          <span data-genre="ritual" class="genre-item" style="font-size: 9px; color: var(--grey); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;">Ritual</span>
+        </div>
+        <div class="recess-glow"></div>
+      </div>
+      <div class="s24"></div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="recess-btn" data-mint-play="1" style="background: var(--black); width: 44px; height: 44px; flex-shrink: 0; position: relative;">
+          <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none"><polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/><polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/></svg>
+          <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <span style="color: var(--white); font-size: 12px;">&#9654;</span>
+          </div>
+          <div class="recess-glow"></div>
+        </div>
+        <div class="waveform-track" id="wf-mint"></div>
+        <span class="player-time">0:12</span>
+      </div>
+      <div class="s16"></div>
+      <div style="text-align: center;">
+        <div class="t-mono" style="font-size: 8px; color: rgba(255,255,255,0.5);">8xK2vMpR7nBwDq3FzYtA9sJhGcXeLk4U6dWoNiTf1bHyZaCnR4p</div>
+        <div class="t-mono" style="font-size: 7px; color: rgba(255,255,255,0.3); margin-top: 2px;">#blocknoise#146</div>
+      </div>
+      <div class="grow"></div>
+      <button class="btn btn-w" style="margin-bottom: 28px;">mint to arweave</button>
+    </div>
+    <div class="tabs">
+      <div class="tab on"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 7. LEADERBOARD ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">leaderboard</div>
+  <div class="phone">
+    <div class="screen" style="padding-top: 28px; padding-bottom: 64px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: -4px;">
+        <div class="t-mono" style="font-size: 11px; color: var(--white); font-weight: 700;">8xK2...nR4p</div>
+        <div class="t-label" style="color: var(--black);">locked</div>
+      </div>
+      <div class="s16"></div>
+      <div class="t-solid" style="font-size: 36px; text-align: center;">Leaderboard</div>
+      <div class="s12"></div>
+      <div class="lb-list">
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">1</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">8xK2...nR4p</div><div class="lb-catalog">#blocknoise#12</div></div><div class="lb-wave-row" data-seed="1"></div><div class="lb-meta">ambient</div></div><div class="lb-score-col"><div class="lb-score">142</div><div class="lb-votes">68 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">2</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">3mJv...qW9z</div><div class="lb-catalog">#blocknoise#7</div></div><div class="lb-wave-row" data-seed="2"></div><div class="lb-meta">industrial</div></div><div class="lb-score-col"><div class="lb-score">98</div><div class="lb-votes">51 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">3</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">7fBx...aL5t</div><div class="lb-catalog">#blocknoise#3</div></div><div class="lb-wave-row" data-seed="3"></div><div class="lb-meta">drone</div></div><div class="lb-score-col"><div class="lb-score">76</div><div class="lb-votes">38 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">4</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">3mJv...qW9z</div><div class="lb-catalog">#blocknoise#41</div></div><div class="lb-wave-row" data-seed="4"></div><div class="lb-meta">drone</div></div><div class="lb-score-col"><div class="lb-score">54</div><div class="lb-votes">27 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">5</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">2aXn...pT8w</div><div class="lb-catalog">#blocknoise#19</div></div><div class="lb-wave-row" data-seed="5"></div><div class="lb-meta">noise</div></div><div class="lb-score-col"><div class="lb-score">31</div><div class="lb-votes">16 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">6</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">5tNk...vR3m</div><div class="lb-catalog">#blocknoise#24</div></div><div class="lb-wave-row" data-seed="6"></div><div class="lb-meta">ambient</div></div><div class="lb-score-col"><div class="lb-score">29</div><div class="lb-votes">14 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">7</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">8xK2...nR4p</div><div class="lb-catalog">#blocknoise#59</div></div><div class="lb-wave-row" data-seed="7"></div><div class="lb-meta">industrial</div></div><div class="lb-score-col"><div class="lb-score">27</div><div class="lb-votes">13 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">8</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">6bPx...eK1n</div><div class="lb-catalog">#blocknoise#33</div></div><div class="lb-wave-row" data-seed="8"></div><div class="lb-meta">industrial</div></div><div class="lb-score-col"><div class="lb-score">24</div><div class="lb-votes">12 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">9</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">1cYm...wJ4s</div><div class="lb-catalog">#blocknoise#5</div></div><div class="lb-wave-row" data-seed="9"></div><div class="lb-meta">noise</div></div><div class="lb-score-col"><div class="lb-score">22</div><div class="lb-votes">11 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">10</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">7fBx...aL5t</div><div class="lb-catalog">#blocknoise#67</div></div><div class="lb-wave-row" data-seed="10"></div><div class="lb-meta">ambient</div></div><div class="lb-score-col"><div class="lb-score">19</div><div class="lb-votes">9 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">11</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">2hVq...nA8k</div><div class="lb-catalog">#blocknoise#48</div></div><div class="lb-wave-row" data-seed="11"></div><div class="lb-meta">drone</div></div><div class="lb-score-col"><div class="lb-score">17</div><div class="lb-votes">8 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">12</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">3mJv...qW9z</div><div class="lb-catalog">#blocknoise#102</div></div><div class="lb-wave-row" data-seed="12"></div><div class="lb-meta">ambient</div></div><div class="lb-score-col"><div class="lb-score">15</div><div class="lb-votes">7 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">13</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">3kMt...gD5v</div><div class="lb-catalog">#blocknoise#71</div></div><div class="lb-wave-row" data-seed="13"></div><div class="lb-meta">industrial</div></div><div class="lb-score-col"><div class="lb-score">14</div><div class="lb-votes">7 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">14</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">8xK2...nR4p</div><div class="lb-catalog">#blocknoise#133</div></div><div class="lb-wave-row" data-seed="14"></div><div class="lb-meta">drone</div></div><div class="lb-score-col"><div class="lb-score">12</div><div class="lb-votes">6 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">15</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">4pHy...sG7x</div><div class="lb-catalog">#blocknoise#88</div></div><div class="lb-wave-row" data-seed="15"></div><div class="lb-meta">noise</div></div><div class="lb-score-col"><div class="lb-score">11</div><div class="lb-votes">5 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">16</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">6rKx...uH9z</div><div class="lb-catalog">#blocknoise#56</div></div><div class="lb-wave-row" data-seed="16"></div><div class="lb-meta">drone</div></div><div class="lb-score-col"><div class="lb-score">9</div><div class="lb-votes">4 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">17</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">1sLw...vJ2a</div><div class="lb-catalog">#blocknoise#114</div></div><div class="lb-wave-row" data-seed="17"></div><div class="lb-meta">glitch</div></div><div class="lb-score-col"><div class="lb-score">8</div><div class="lb-votes">4 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">18</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">5uNv...xK4b</div><div class="lb-catalog">#blocknoise#129</div></div><div class="lb-wave-row" data-seed="18"></div><div class="lb-meta">ambient</div></div><div class="lb-score-col"><div class="lb-score">6</div><div class="lb-votes">3 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">19</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">7fBx...aL5t</div><div class="lb-catalog">#blocknoise#141</div></div><div class="lb-wave-row" data-seed="19"></div><div class="lb-meta">industrial</div></div><div class="lb-score-col"><div class="lb-score">4</div><div class="lb-votes">2 votes</div></div></div>
+        <div class="lb-row"><span class="lb-play">&#9654;</span><span class="lb-rank">20</span><div class="lb-info"><div class="lb-wallet-row"><div class="lb-wallet">3yRt...bM8d</div><div class="lb-catalog">#blocknoise#145</div></div><div class="lb-wave-row" data-seed="20"></div><div class="lb-meta">noise</div></div><div class="lb-score-col"><div class="lb-score">2</div><div class="lb-votes">1 votes</div></div></div>
+      </div>
+    </div>
+    <div class="tabs" style="border-top: 1px solid rgba(255,255,255,0.12);">
+      <div class="tab"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab on"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 8. SEEKER RADIO ═══ -->
+<div class="phone-wrapper">
+  <div class="phone-label">seeker radio</div>
+  <div class="phone">
+    <div class="screen" style="padding-top: 28px; padding-bottom: 64px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: -4px;">
+        <div class="t-mono" style="font-size: 11px; color: var(--white); font-weight: 700;">8xK2...nR4p</div>
+        <div class="t-label" style="color: var(--black);">locked</div>
+      </div>
+      <div class="s24"></div>
+      <div style="text-align: center; display: inline-block; margin: 0 auto;">
+        <div class="t-outline" style="font-size: 68px; text-align: left;">BLOCK</div>
+        <div class="t-outline" style="font-size: 68px; text-align: justify; display: flex; justify-content: space-between;">
+          <span>N</span><span>O</span><span>I</span><span>S</span><span style="margin-right: -3px;">E</span>
+        </div>
+      </div>
+      <div class="t-mono" style="font-size: 10px; color: rgba(255,255,255,0.5); text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px;">seeker radio</div>
+      <div class="s24"></div>
+      <div class="recess-btn visualizer-box" style="background: var(--black); aspect-ratio: 1; position: relative;">
+        <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none"><polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/><polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/></svg>
+        <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center; padding: 8%;">
+          <canvas id="radio-visualizer" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <div class="recess-glow"></div>
+      </div>
+      <div class="s16"></div>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
+        <span class="t-mono" style="color: var(--white); font-weight: 700; font-size: 9px;">8xK2...nR4p</span>
+        <span class="t-mono" style="font-size: 7px; color: rgba(255,255,255,0.35);">#blocknoise#12</span>
+        <span style="font-size: 8px; color: var(--grey); text-transform: uppercase; letter-spacing: 1px;">ambient</span>
+      </div>
+      <div class="s16"></div>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 16px;">
+        <div class="recess-btn" data-radio="prev" style="background: var(--black); width: 48px; height: 48px; position: relative;">
+          <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none"><polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/><polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/></svg>
+          <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center;"><span style="color: var(--white); font-size: 12px;">&#9664;&#9664;</span></div>
+          <div class="recess-glow"></div>
+        </div>
+        <div class="recess-btn" data-radio="play" style="background: var(--black); width: 60px; height: 60px; position: relative;">
+          <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none"><polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/><polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/></svg>
+          <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center;"><span style="color: var(--white); font-size: 18px;">&#9654;</span></div>
+          <div class="recess-glow"></div>
+        </div>
+        <div class="recess-btn" data-radio="next" style="background: var(--black); width: 48px; height: 48px; position: relative;">
+          <svg viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preserveAspectRatio="none"><polygon points="0,0 100,0 78,5 8,5" fill="rgba(255,255,255,0.07)" style="vector-effect: non-scaling-stroke;"/><polygon points="100,0 100,100 78,82 78,5" fill="rgba(255,255,255,0.05)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,100 100,100 78,82 8,82" fill="rgba(255,255,255,0.02)" style="vector-effect: non-scaling-stroke;"/><polygon points="0,0 0,100 8,82 8,5" fill="rgba(255,255,255,0.035)" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="0" x2="8" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="0" x2="78" y2="5" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="0" y1="100" x2="8" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><line x1="100" y1="100" x2="78" y2="82" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/><rect x="8" y="5" width="70" height="77" fill="none" stroke="#444" stroke-width="1" style="vector-effect: non-scaling-stroke;"/></svg>
+          <div class="recess-content" style="position: relative; z-index: 1; height: 100%; display: flex; align-items: center; justify-content: center;"><span style="color: var(--white); font-size: 12px;">&#9654;&#9654;</span></div>
+          <div class="recess-glow"></div>
+        </div>
+      </div>
+      <div class="grow"></div>
+      <div class="social-row" style="margin-bottom: 28px;">
+        <!-- X (Twitter) -->
+        <svg class="social-icon" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <!-- Telegram -->
+        <svg class="social-icon" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        <!-- Instagram -->
+        <svg class="social-icon" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 1 0 0-12.324zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405a1.441 1.441 0 1 1-2.882 0 1.441 1.441 0 0 1 2.882 0z"/></svg>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab"><div class="tab-i">&#9632;</div>HOME</div>
+      <div class="tab"><div class="tab-i">&#9776;</div>BOARD</div>
+      <div class="tab on"><div class="tab-i">&#9654;</div>RADIO</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function makeWaveform(id, pct, seed) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    for (let i = 0; i < 40; i++) {
+      const b = document.createElement('div');
+      b.className = 'bar' + (i / 40 < pct ? ' played' : '');
+      b.style.height = Math.round(4 + Math.abs(Math.sin(seed + i * 0.7) * 24) + Math.abs(Math.cos(seed * 2 + i * 1.3) * 6)) + 'px';
+      el.appendChild(b);
+    }
+  }
+
+  function makeVerticalWaveform(id, pct, seed) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const count = 80;
+    for (let i = 0; i < count; i++) {
+      const b = document.createElement('div');
+      b.className = 'vbar' + (i / count < pct ? ' played' : '');
+      const amp = Math.abs(Math.sin(seed + i * 0.5) * 80) + Math.abs(Math.cos(seed * 2 + i * 0.9) * 15) + 15;
+      b.style.width = Math.round(amp) + '%';
+      el.appendChild(b);
+    }
+  }
+
+  makeVerticalWaveform('wf-s1', 0.65, 1.2);
+  makeVerticalWaveform('wf-s2', 0.30, 4.7);
+  makeVerticalWaveform('wf-s3', 0.0, 8.1);
+  makeWaveform('wf-mint', 0.40, 3.3);
+
+  // Recess button — animate inner square
+  const REST = { x1: 8, y1: 5, x2: 78, y2: 82 };
+  const PRESSED = { x1: 4, y1: 2.5, x2: 89, y2: 91 };
+  const DURATION = 180;
+
+  const GAP = 13; // px gap between inner rect border and text
+
+  function updateSVG(btn, coords) {
+    const { x1, y1, x2, y2 } = coords;
+    const svg = btn.querySelector('svg');
+    const polys = svg.querySelectorAll('polygon');
+    const lines = svg.querySelectorAll('line');
+    const rect = svg.querySelector('rect');
+    const content = btn.querySelector('.recess-content');
+    const w = btn.offsetWidth;
+    const h = btn.offsetHeight;
+    // Top wall
+    polys[0].setAttribute('points', `0,0 100,0 ${x2},${y1} ${x1},${y1}`);
+    // Right wall
+    polys[1].setAttribute('points', `100,0 100,100 ${x2},${y2} ${x2},${y1}`);
+    // Bottom wall
+    polys[2].setAttribute('points', `0,100 100,100 ${x2},${y2} ${x1},${y2}`);
+    // Left wall
+    polys[3].setAttribute('points', `0,0 0,100 ${x1},${y2} ${x1},${y1}`);
+    // Corner lines
+    lines[0].setAttribute('x2', x1); lines[0].setAttribute('y2', y1);
+    lines[1].setAttribute('x2', x2); lines[1].setAttribute('y2', y1);
+    lines[2].setAttribute('x2', x1); lines[2].setAttribute('y2', y2);
+    lines[3].setAttribute('x2', x2); lines[3].setAttribute('y2', y2);
+    // Inner rect
+    rect.setAttribute('x', x1);
+    rect.setAttribute('y', y1);
+    rect.setAttribute('width', x2 - x1);
+    rect.setAttribute('height', y2 - y1);
+    // Update content padding to follow inner rect + gap
+    const pTop = (y1 / 100) * h + GAP;
+    const pLeft = (x1 / 100) * w + GAP;
+    const pRight = ((100 - x2) / 100) * w + GAP;
+    const pBottom = ((100 - y2) / 100) * h + GAP;
+    content.style.padding = `${pTop}px ${pRight}px ${pBottom}px ${pLeft}px`;
+    // Scale all font sizes and gaps proportionally
+    const scale = (x2 - x1) / (REST.x2 - REST.x1);
+    content.querySelectorAll('[style]').forEach(el => {
+      const base = el._baseFontSize;
+      if (base !== undefined) el.style.fontSize = (base * scale) + 'px';
+      const baseGap = el._baseGap;
+      if (baseGap !== undefined) el.style.gap = (baseGap * scale) + 'px';
+      const baseSpacing = el._baseLetterSpacing;
+      if (baseSpacing !== undefined) el.style.letterSpacing = (baseSpacing * scale) + 'px';
+      const baseMT = el._baseMarginTop;
+      if (baseMT !== undefined) el.style.marginTop = (baseMT * scale) + 'px';
+    });
+  }
+
+  function animateRecess(btn, from, to) {
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min((now - start) / DURATION, 1);
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
+      const coords = {
+        x1: from.x1 + (to.x1 - from.x1) * ease,
+        y1: from.y1 + (to.y1 - from.y1) * ease,
+        x2: from.x2 + (to.x2 - from.x2) * ease,
+        y2: from.y2 + (to.y2 - from.y2) * ease,
+      };
+      updateSVG(btn, coords);
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  document.querySelectorAll('.recess-btn').forEach(btn => {
+    btn._state = 'rest';
+    // Store base values for all styled elements
+    btn.querySelectorAll('.recess-content [style]').forEach(el => {
+      const cs = el.style;
+      if (cs.fontSize) el._baseFontSize = parseFloat(cs.fontSize);
+      if (cs.gap) el._baseGap = parseFloat(cs.gap);
+      if (cs.letterSpacing) el._baseLetterSpacing = parseFloat(cs.letterSpacing);
+      if (cs.marginTop) el._baseMarginTop = parseFloat(cs.marginTop);
+    });
+    updateSVG(btn, REST); // set initial padding from JS
+    btn.addEventListener('click', () => {
+      // Determine group type: mutual exclusion vs independent toggle
+      const mutualKeys = ['tier', 'pay', 'block', 'genre'];
+      let groupKey = null;
+      for (const k of mutualKeys) {
+        if (btn.dataset[k] !== undefined) { groupKey = k; break; }
+      }
+      if (groupKey) {
+        // Mutual exclusion: deselect siblings in same group
+        document.querySelectorAll('.recess-btn[data-' + groupKey + ']').forEach(b => {
+          if (b !== btn && b._state === 'pressed') {
+            b.classList.remove('selected');
+            b._state = 'rest';
+            animateRecess(b, PRESSED, REST);
+          }
+        });
+        if (btn._state === 'rest') {
+          btn.classList.add('selected');
+          btn._state = 'pressed';
+          animateRecess(btn, REST, PRESSED);
+        }
+      } else {
+        // Independent toggle (play, vote, radio, mixer-play, mint-play)
+        if (btn._state === 'rest') {
+          btn.classList.add('selected');
+          btn._state = 'pressed';
+          animateRecess(btn, REST, PRESSED);
+        } else {
+          btn.classList.remove('selected');
+          btn._state = 'rest';
+          animateRecess(btn, PRESSED, REST);
+        }
+      }
+    });
+  });
+
+  // ── BLOCK MIXER — 3D Spatial Panner ──
+  (function() {
+    var room = document.getElementById('spatial-canvas');
+    var roomCanvas = document.getElementById('room-canvas');
+    var lockBtn = document.getElementById('lock-btn');
+    var timerEl = document.getElementById('mixer-timer');
+    if (!room || !roomCanvas || !lockBtn || !timerEl) return;
+
+    var ctx = roomCanvas.getContext('2d');
+    var dotEls = room.querySelectorAll('.dot');
+    var blockBtns = document.querySelectorAll('.block-label[data-block]');
+
+    var activeBlock = 1;
+    var lockedBlocks = new Set();
+    var isDragging = false;
+    var dragCooldown = false; // prevents click-to-place after drag/slider release
+    var dragStartScreen = null;
+    var dragStartPos = null;
+
+    // ── LFO STATE ──
+    var lfoState = {
+      1: { a: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 }, b: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 }, c: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 } },
+      2: { a: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 }, b: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 }, c: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 } },
+      3: { a: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 }, b: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 }, c: { shape: 'sine', rate: 0, depth: 100, phase: 0, accPhase: 0 } }
+    };
+    var lfoSection = document.getElementById('lfo-section');
+    var lfoBlockIndicator = document.getElementById('lfo-block-indicator');
+    var lfoCanvasA = document.getElementById('lfo-canvas-a');
+    var lfoCanvasB = document.getElementById('lfo-canvas-b');
+    var lfoCanvasC = document.getElementById('lfo-canvas-c');
+    var lfoCtxA = lfoCanvasA ? lfoCanvasA.getContext('2d') : null;
+    var lfoCtxB = lfoCanvasB ? lfoCanvasB.getContext('2d') : null;
+    var lfoCtxC = lfoCanvasC ? lfoCanvasC.getContext('2d') : null;
+    var lfoAnimPhase = 0;
+
+    // ── SPATIAL AUDIO STATE ──
+    var audioCtx = null;
+    var oscillators = {};
+    var panners = {};
+    var gainNodes = {};
+    var audioStarted = false;
+
+    // Timer state
+    var timeRemaining = 300;
+    var timerStarted = false;
+    var timerInterval = null;
+
+    // 3D positions for each block — normalized [0..1]
+    // x: left(0) → right(1), y: floor(0) → ceiling(1), z: near(0) → far(1)
+    var dotPos = {
+      1: { x: 0.5, y: 0.5, z: 0.5 },
+      2: { x: 0.5, y: 0.5, z: 0.5 },
+      3: { x: 0.5, y: 0.5, z: 0.5 }
+    };
+
+    // Locked dot orbit state (for smooth 3D orbit animation)
+    var orbitPhase = { 1: 0, 2: 0, 3: 0 };
+
+    // ── 3D PROJECTION ──
+    // Projects normalized 3D coords (0..1) to screen pixel coords
+    function project(x, y, z, w, h) {
+      var vx = w * 0.5;   // vanishing point X = center
+      var vy = h * 0.5;   // vanishing point Y = center (so depth lines hit frame corners)
+      var farScale = 0.55; // how small the back wall is relative to near plane
+      // Hyperbolic (1/depth) scale — proper perspective foreshortening
+      // Near squares appear bigger, far squares compress toward vanishing point
+      var scale = 1.0 / (1.0 + z * (1.0 / farScale - 1.0));
+      return {
+        sx: vx + (x - 0.5) * w * scale,
+        sy: vy + (0.5 - y) * h * scale,
+        scale: scale
+      };
+    }
+
+    // Reverse-project: given screen coords, find x and z (y unchanged)
+    function unproject(sx, sy, w, h) {
+      var vx = w * 0.5;
+      var vy = h * 0.5;
+      var farScale = 0.55;
+      // From sy, solve for z:  sy = vy + (0.5 - y) * h * scale
+      // For click-to-place, we estimate z from vertical position
+      // Screen top → far (z=1), screen bottom → near (z=0)
+      var z = 1.0 - (sy / h);
+      z = Math.max(0.02, Math.min(0.98, z));
+      var scale = 1.0 / (1.0 + z * (1.0 / farScale - 1.0));
+      var x = ((sx - vx) / (w * scale)) + 0.5;
+      var padX = ROOM_PAD_PX / (w * scale);
+      x = clamp(x, padX, 1 - padX);
+      return { x: x, z: z };
+    }
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    // Clamp x,y with consistent screen-space padding (4px) from room walls at any depth
+    var ROOM_PAD_PX = 4;
+    function clampToRoom(x, y, z) {
+      var w = room.offsetWidth, h = room.offsetHeight;
+      var scale = 1.0 / (1.0 + z * (1.0 / 0.55 - 1.0));
+      var padX = ROOM_PAD_PX / (w * scale);
+      var padY = ROOM_PAD_PX / (h * scale);
+      return {
+        x: clamp(x, padX, 1 - padX),
+        y: clamp(y, padY, 1 - padY)
+      };
+    }
+
+    // ── LFO FUNCTIONS ──
+    function lfoWaveform(shape, t) {
+      t = ((t % 1) + 1) % 1; // normalize to 0..1
+      switch (shape) {
+        case 'sine': return Math.sin(t * Math.PI * 2);
+        case 'tri': return t < 0.5 ? (t * 4 - 1) : (3 - t * 4);
+        case 'square': return t < 0.5 ? 1 : -1;
+        case 'saw': return t * 2 - 1;
+        default: return 0;
+      }
+    }
+
+    function drawLfoCanvas(ctx, canvas, lfo, animPhase) {
+      if (!ctx || !canvas) return;
+      var dpr = window.devicePixelRatio || 1;
+      var w = canvas.clientWidth;
+      var h = canvas.clientHeight;
+      if (w === 0 || h === 0) return;
+      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      var depth = lfo.depth / 100;
+      var phase = lfo.phase / 100;
+      var padY = 4;
+      var ampH = (h - padY * 2) / 2;
+      var midY = h / 2;
+
+      // Center reference line
+      ctx.beginPath();
+      ctx.moveTo(0, midY);
+      ctx.lineTo(w, midY);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Waveform path
+      ctx.beginPath();
+      var steps = Math.max(w, 60);
+      for (var i = 0; i <= steps; i++) {
+        var t = i / steps;
+        var val = lfoWaveform(lfo.shape, t + phase) * depth;
+        var px = t * w;
+        var py = midY - val * ampH;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = 'rgba(0,18,255,0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Subtle fill under waveform
+      ctx.lineTo(w, midY);
+      ctx.lineTo(0, midY);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(0,18,255,0.08)';
+      ctx.fill();
+
+      // Animated phase dot — uses accumulated phase for smooth rate changes
+      var dotT = (lfo.accPhase + phase) % 1;
+      var dotVal = lfoWaveform(lfo.shape, dotT + phase) * depth;
+      var dotX = dotT * w;
+      var dotY = midY - dotVal * ampH;
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 5, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,18,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    function animateLfo() {
+      var lfoDelta = 0.008;
+      lfoAnimPhase += lfoDelta;
+      if (lfoAnimPhase > 1000) lfoAnimPhase = 0;
+      // Advance accumulated phase for ALL blocks/LFOs at their own rate
+      for (var bn = 1; bn <= 3; bn++) {
+        ['a', 'b', 'c'].forEach(function(key) {
+          var lfo = lfoState[bn][key];
+          var rate = 0.1 + (lfo.rate / 100) * 3.9;
+          lfo.accPhase += lfoDelta * rate;
+        });
+      }
+      var blockLfo = lfoState[activeBlock];
+      drawLfoCanvas(lfoCtxA, lfoCanvasA, blockLfo.a, lfoAnimPhase);
+      drawLfoCanvas(lfoCtxB, lfoCanvasB, blockLfo.b, lfoAnimPhase);
+      drawLfoCanvas(lfoCtxC, lfoCanvasC, blockLfo.c, lfoAnimPhase);
+      // Update dot positions so LFO modulation animates the orbs
+      updateDotPositions();
+      requestAnimationFrame(animateLfo);
+    }
+
+    function syncLfoUI() {
+      if (!lfoSection) return;
+      var blockLfo = lfoState[activeBlock];
+      if (lfoBlockIndicator) lfoBlockIndicator.textContent = 'BLOCK' + activeBlock;
+      ['a', 'b', 'c'].forEach(function(lfoKey) {
+        var col = lfoSection.querySelector('.lfo-col[data-lfo="' + lfoKey + '"]');
+        if (!col) return;
+        var lfo = blockLfo[lfoKey];
+        col.querySelectorAll('.lfo-shape-btn').forEach(function(btn) {
+          btn.classList.toggle('selected', btn.dataset.shape === lfo.shape);
+        });
+        col.querySelectorAll('.lfo-slider').forEach(function(slider) {
+          var param = slider.dataset.param;
+          if (lfo[param] !== undefined) slider.value = lfo[param];
+        });
+      });
+    }
+
+    // ── SPATIAL AUDIO ENGINE ──
+    var muteState = { 1: false, 2: false, 3: false }; // monitoring mutes (don't affect final)
+
+    function initSpatialAudio() {
+      if (audioStarted) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Position listener at origin facing forward (-Z)
+      if (audioCtx.listener.positionX) {
+        audioCtx.listener.positionX.value = 0;
+        audioCtx.listener.positionY.value = 0;
+        audioCtx.listener.positionZ.value = 0;
+        audioCtx.listener.forwardX.value = 0;
+        audioCtx.listener.forwardY.value = 0;
+        audioCtx.listener.forwardZ.value = -1;
+        audioCtx.listener.upX.value = 0;
+        audioCtx.listener.upY.value = 1;
+        audioCtx.listener.upZ.value = 0;
+      } else {
+        audioCtx.listener.setPosition(0, 0, 0);
+        audioCtx.listener.setOrientation(0, 0, -1, 0, 1, 0);
+      }
+
+      // Master compressor/limiter to prevent clipping
+      var compressor = audioCtx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 12;
+      compressor.ratio.value = 12;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.15;
+      compressor.connect(audioCtx.destination);
+
+      // 3 oscillators at different frequencies/waveforms
+      var tones = {
+        1: { freq: 220, type: 'sine' },      // A3 — low bass
+        2: { freq: 330, type: 'triangle' },   // E4 — mid buzzy
+        3: { freq: 440, type: 'sine' }        // A4 — high clear
+      };
+
+      for (var n = 1; n <= 3; n++) {
+        var osc = audioCtx.createOscillator();
+        osc.type = tones[n].type;
+        osc.frequency.value = tones[n].freq;
+
+        var panner = audioCtx.createPanner();
+        panner.panningModel = 'HRTF';
+        panner.distanceModel = 'inverse';
+        panner.refDistance = 1;
+        panner.maxDistance = 10;
+        panner.rolloffFactor = 1.2;
+        panner.coneOuterGain = 0.4;
+
+        var gain = audioCtx.createGain();
+        gain.gain.value = 0; // start muted, updateDotPositions will unmute
+
+        osc.connect(panner);
+        panner.connect(gain);
+        gain.connect(compressor); // route through compressor, not direct to destination
+
+        osc.start();
+
+        oscillators[n] = osc;
+        panners[n] = panner;
+        gainNodes[n] = gain;
+      }
+
+      audioStarted = true;
+    }
+
+    function updatePannerPosition(n, px, py, pz) {
+      if (!audioStarted || !panners[n]) return;
+      // Map room coords [0..1] → audio space (symmetric about origin)
+      var ax = (px - 0.5) * 6;    // left/right: -3 to +3
+      var ay = (py - 0.5) * 4;    // down/up: -2 to +2
+      var az = (0.5 - pz) * 6;    // near(z=0)=+3 (in front), far(z=1)=-3 (behind)
+      if (panners[n].positionX) {
+        panners[n].positionX.setValueAtTime(ax, audioCtx.currentTime);
+        panners[n].positionY.setValueAtTime(ay, audioCtx.currentTime);
+        panners[n].positionZ.setValueAtTime(az, audioCtx.currentTime);
+      } else {
+        panners[n].setPosition(ax, ay, az);
+      }
+    }
+
+    // ── CANVAS 3D ROOM DRAWING ──
+    function resizeCanvas() {
+      var dpr = window.devicePixelRatio || 1;
+      var w = room.offsetWidth;
+      var h = room.offsetHeight;
+      roomCanvas.width = w * dpr;
+      roomCanvas.height = h * dpr;
+      roomCanvas.style.width = w + 'px';
+      roomCanvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function drawLine(x1, y1, x2, y2, color, width) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.stroke();
+    }
+
+    function drawRoom() {
+      var w = room.offsetWidth;
+      var h = room.offsetHeight;
+      if (w === 0 || h === 0) return;
+      ctx.clearRect(0, 0, w, h);
+
+      var BLUE = [0, 18, 255];
+      function rgba(r, g, b, a) { return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'; }
+      function blue(a) { return rgba(BLUE[0], BLUE[1], BLUE[2], a); }
+
+      // Room corner points — project the 8 corners of the unit cube
+      // Near plane (z=0): 4 corners at screen edges
+      var n_bl = project(0, 0, 0, w, h); // near bottom-left
+      var n_br = project(1, 0, 0, w, h); // near bottom-right
+      var n_tl = project(0, 1, 0, w, h); // near top-left
+      var n_tr = project(1, 1, 0, w, h); // near top-right
+      // Far plane (z=1): 4 corners converged toward vanishing point
+      var f_bl = project(0, 0, 1, w, h);
+      var f_br = project(1, 0, 1, w, h);
+      var f_tl = project(0, 1, 1, w, h);
+      var f_tr = project(1, 1, 1, w, h);
+
+      // ── GRID LINES ──
+      var gridDivs = 5; // number of grid cells per axis
+
+      // Back wall grid (at z=1)
+      for (var i = 0; i <= gridDivs; i++) {
+        var t = i / gridDivs;
+        var lh1 = project(0, t, 1, w, h);
+        var lh2 = project(1, t, 1, w, h);
+        drawLine(lh1.sx, lh1.sy, lh2.sx, lh2.sy, blue(0.12), 1);
+        var lv1 = project(t, 0, 1, w, h);
+        var lv2 = project(t, 1, 1, w, h);
+        drawLine(lv1.sx, lv1.sy, lv2.sx, lv2.sy, blue(0.12), 1);
+      }
+
+      // Floor grid (y=0) — lines going from near to far
+      for (var i = 0; i <= gridDivs; i++) {
+        var t = i / gridDivs;
+        var fNear = project(t, 0, 0, w, h);
+        var fFar = project(t, 0, 1, w, h);
+        drawLine(fNear.sx, fNear.sy, fFar.sx, fFar.sy, blue(0.22), 1.5);
+        var fLeft = project(0, 0, t, w, h);
+        var fRight = project(1, 0, t, w, h);
+        var depthFade = lerp(0.28, 0.08, t);
+        drawLine(fLeft.sx, fLeft.sy, fRight.sx, fRight.sy, blue(depthFade), lerp(2, 0.8, t));
+      }
+
+      // Ceiling grid (y=1)
+      for (var i = 0; i <= gridDivs; i++) {
+        var t = i / gridDivs;
+        var cNear = project(t, 1, 0, w, h);
+        var cFar = project(t, 1, 1, w, h);
+        drawLine(cNear.sx, cNear.sy, cFar.sx, cFar.sy, blue(0.14), 1);
+        var cLeft = project(0, 1, t, w, h);
+        var cRight = project(1, 1, t, w, h);
+        var depthFade = lerp(0.16, 0.05, t);
+        drawLine(cLeft.sx, cLeft.sy, cRight.sx, cRight.sy, blue(depthFade), lerp(1.2, 0.5, t));
+      }
+
+      // Left wall grid (x=0)
+      for (var i = 0; i <= gridDivs; i++) {
+        var t = i / gridDivs;
+        var lNear = project(0, t, 0, w, h);
+        var lFar = project(0, t, 1, w, h);
+        drawLine(lNear.sx, lNear.sy, lFar.sx, lFar.sy, blue(0.14), 1);
+        var lBot = project(0, 0, t, w, h);
+        var lTop = project(0, 1, t, w, h);
+        var depthFade = lerp(0.16, 0.05, t);
+        drawLine(lBot.sx, lBot.sy, lTop.sx, lTop.sy, blue(depthFade), lerp(1.2, 0.5, t));
+      }
+
+      // Right wall grid (x=1)
+      for (var i = 0; i <= gridDivs; i++) {
+        var t = i / gridDivs;
+        var rNear = project(1, t, 0, w, h);
+        var rFar = project(1, t, 1, w, h);
+        drawLine(rNear.sx, rNear.sy, rFar.sx, rFar.sy, blue(0.14), 1);
+        var rBot = project(1, 0, t, w, h);
+        var rTop = project(1, 1, t, w, h);
+        var depthFade = lerp(0.16, 0.05, t);
+        drawLine(rBot.sx, rBot.sy, rTop.sx, rTop.sy, blue(depthFade), lerp(1.2, 0.5, t));
+      }
+
+      // ── ROOM EDGES (bright lines) ──
+      // 4 corner edges (near → far)
+      drawLine(n_bl.sx, n_bl.sy, f_bl.sx, f_bl.sy, blue(0.4), 2);
+      drawLine(n_br.sx, n_br.sy, f_br.sx, f_br.sy, blue(0.4), 2);
+      drawLine(n_tl.sx, n_tl.sy, f_tl.sx, f_tl.sy, blue(0.4), 2);
+      drawLine(n_tr.sx, n_tr.sy, f_tr.sx, f_tr.sy, blue(0.4), 2);
+
+      // Back wall rectangle
+      drawLine(f_bl.sx, f_bl.sy, f_br.sx, f_br.sy, blue(0.35), 2);
+      drawLine(f_br.sx, f_br.sy, f_tr.sx, f_tr.sy, blue(0.35), 2);
+      drawLine(f_tr.sx, f_tr.sy, f_tl.sx, f_tl.sy, blue(0.35), 2);
+      drawLine(f_tl.sx, f_tl.sy, f_bl.sx, f_bl.sy, blue(0.35), 2);
+
+      // Near plane rectangle (screen border — subtle)
+      drawLine(n_bl.sx, n_bl.sy, n_br.sx, n_br.sy, blue(0.15), 1.5);
+      drawLine(n_br.sx, n_br.sy, n_tr.sx, n_tr.sy, blue(0.15), 1.5);
+      drawLine(n_tr.sx, n_tr.sy, n_tl.sx, n_tl.sy, blue(0.15), 1.5);
+      drawLine(n_tl.sx, n_tl.sy, n_bl.sx, n_bl.sy, blue(0.15), 1.5);
+    }
+
+    // ── DOT RENDERING ──
+    function getDotEl(n) {
+      return room.querySelector('.dot[data-dot="' + n + '"]');
+    }
+
+    function updateDotStates() {
+      dotEls.forEach(function(dot) {
+        var n = parseInt(dot.dataset.dot);
+        dot.classList.remove('active', 'inactive', 'locked');
+        if (lockedBlocks.has(n)) {
+          dot.classList.add('locked');
+        } else if (n === activeBlock) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.add('inactive');
+        }
+      });
+    }
+
+    function updateDotPositions() {
+      var w = room.offsetWidth;
+      var h = room.offsetHeight;
+      if (w === 0 || h === 0) return;
+
+      dotEls.forEach(function(dot) {
+        var n = parseInt(dot.dataset.dot);
+        var pos = dotPos[n];
+        var px = pos.x, py = pos.y, pz = pos.z;
+
+        // Hide dots that aren't active or locked
+        if (n !== activeBlock && !lockedBlocks.has(n)) {
+          dot.style.display = 'none';
+          // Mute audio for hidden blocks
+          if (audioStarted && gainNodes[n]) {
+            var g = gainNodes[n].gain;
+            g.cancelScheduledValues(audioCtx.currentTime);
+            g.setValueAtTime(g.value, audioCtx.currentTime);
+            g.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+          }
+          return;
+        }
+        dot.style.display = '';
+        // Unmute audio for visible blocks (respect monitoring mute)
+        if (audioStarted && gainNodes[n]) {
+          var targetGain = muteState[n] ? 0 : 0.15;
+          var g = gainNodes[n].gain;
+          if (Math.abs(g.value - targetGain) > 0.01) {
+            g.cancelScheduledValues(audioCtx.currentTime);
+            g.setValueAtTime(g.value, audioCtx.currentTime);
+            g.linearRampToValueAtTime(targetGain, audioCtx.currentTime + 0.05);
+          }
+        }
+
+        // Add orbit offset for locked dots
+        if (lockedBlocks.has(n)) {
+          var phase = orbitPhase[n];
+          px += Math.sin(phase) * 0.04;
+          py += Math.cos(phase * 0.7) * 0.03;
+          pz += Math.sin(phase * 0.5 + 1) * 0.03;
+          pz = clamp(pz, 0.02, 0.98);
+          var clamped = clampToRoom(px, py, pz);
+          px = clamped.x;
+          py = clamped.y;
+        }
+
+        // Apply LFO modulation — LFO A → X, LFO B → Y, LFO C → Z
+        var blockLfo = lfoState[n];
+        if (blockLfo) {
+          var lfoValA = lfoWaveform(blockLfo.a.shape, blockLfo.a.accPhase + blockLfo.a.phase / 100) * (blockLfo.a.depth / 100);
+          px += lfoValA * 0.5;
+
+          var lfoValB = lfoWaveform(blockLfo.b.shape, blockLfo.b.accPhase + blockLfo.b.phase / 100) * (blockLfo.b.depth / 100);
+          py += lfoValB * 0.5;
+
+          var lfoValC = lfoWaveform(blockLfo.c.shape, blockLfo.c.accPhase + blockLfo.c.phase / 100) * (blockLfo.c.depth / 100);
+          pz = clamp(pz + lfoValC * 0.5, 0, 1);
+
+          var clampedLfo = clampToRoom(px, py, pz);
+          px = clampedLfo.x;
+          py = clampedLfo.y;
+        }
+
+        var proj = project(px, py, pz, w, h);
+        // Size: 24px near (z=0) → 8px far (z=1)
+        var size = lerp(24, 8, pz);
+        // Glow scales with depth
+        var glowR1 = lerp(16, 6, pz);
+        var glowR2 = lerp(32, 12, pz);
+        var glowR3 = lerp(64, 20, pz);
+
+        dot.style.left = proj.sx + 'px';
+        dot.style.top = proj.sy + 'px';
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+
+        // Dynamic glow based on depth and state
+        if (dot.classList.contains('active')) {
+          dot.style.boxShadow = '0 0 ' + glowR1 + 'px var(--blue), 0 0 ' + glowR2 + 'px rgba(0,18,255,0.6), 0 0 ' + glowR3 + 'px rgba(0,18,255,0.25)';
+        } else if (dot.classList.contains('locked')) {
+          dot.style.boxShadow = '0 0 ' + (glowR1 * 0.7) + 'px var(--blue), 0 0 ' + (glowR2 * 0.7) + 'px rgba(0,18,255,0.5)';
+        } else {
+          dot.style.boxShadow = '0 0 ' + (glowR1 * 0.4) + 'px rgba(0,18,255,0.3)';
+        }
+
+        // Z-index: near dots render on top
+        dot.style.zIndex = Math.round((1 - pz) * 10) + 3;
+
+        // Update spatial audio panner position
+        updatePannerPosition(n, px, py, pz);
+      });
+
+    }
+
+    // ── ORBIT ANIMATION FOR LOCKED DOTS ──
+    var orbitRaf = null;
+    var lastOrbitTime = 0;
+    function animateOrbits(timestamp) {
+      if (!lastOrbitTime) lastOrbitTime = timestamp;
+      var dt = (timestamp - lastOrbitTime) / 1000; // seconds
+      lastOrbitTime = timestamp;
+
+      var hasOrbiting = false;
+      for (var n = 1; n <= 3; n++) {
+        if (lockedBlocks.has(n)) {
+          orbitPhase[n] += dt * 0.8; // speed of orbit
+          hasOrbiting = true;
+        }
+      }
+      if (hasOrbiting) {
+        updateDotPositions();
+        orbitRaf = requestAnimationFrame(animateOrbits);
+      } else {
+        orbitRaf = null;
+        lastOrbitTime = 0;
+      }
+    }
+
+    function startOrbitAnimation() {
+      if (!orbitRaf) {
+        lastOrbitTime = 0;
+        orbitRaf = requestAnimationFrame(animateOrbits);
+      }
+    }
+
+    // ── UI UPDATES ──
+    function updateLockButton() {
+      if (lockedBlocks.size === 3) {
+        lockBtn.textContent = 'mix locked \u2713';
+        lockBtn.style.opacity = '0.5';
+        lockBtn.style.pointerEvents = 'none';
+      } else {
+        lockBtn.textContent = 'lock block ' + activeBlock;
+        lockBtn.style.opacity = '1';
+        lockBtn.style.pointerEvents = 'auto';
+      }
+      // Sync locked class on block labels
+      blockBtns.forEach(function(b) {
+        var bn = parseInt(b.dataset.block);
+        if (lockedBlocks.has(bn)) {
+          b.classList.add('locked');
+        } else {
+          b.classList.remove('locked');
+        }
+      });
+    }
+
+    function formatTime(secs) {
+      var m = Math.floor(secs / 60);
+      var s = secs % 60;
+      return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function startTimer() {
+      if (timerStarted) return;
+      timerStarted = true;
+      timerInterval = setInterval(function() {
+        timeRemaining--;
+        timerEl.textContent = formatTime(timeRemaining);
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          [1, 2, 3].forEach(function(n) { lockedBlocks.add(n); });
+          updateDotStates();
+          updateDotPositions();
+          updateLockButton();
+          startOrbitAnimation();
+        }
+      }, 1000);
+    }
+
+    // ── LFO EVENT LISTENERS ──
+    if (lfoSection) {
+      lfoSection.querySelectorAll('.lfo-shape-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var col = btn.closest('.lfo-col');
+          var lfoKey = col.dataset.lfo;
+          var shape = btn.dataset.shape;
+          lfoState[activeBlock][lfoKey].shape = shape;
+          col.querySelectorAll('.lfo-shape-btn').forEach(function(b) {
+            b.classList.toggle('selected', b.dataset.shape === shape);
+          });
+        });
+      });
+      lfoSection.querySelectorAll('.lfo-slider').forEach(function(slider) {
+        slider.addEventListener('input', function() {
+          var col = slider.closest('.lfo-col');
+          var lfoKey = col.dataset.lfo;
+          var param = slider.dataset.param;
+          lfoState[activeBlock][lfoKey][param] = parseInt(slider.value);
+        });
+      });
+    }
+
+    // ── MUTE BUTTON HANDLERS ──
+    document.querySelectorAll('.lfo-mute-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var blockNum = parseInt(btn.dataset.muteBlock);
+        muteState[blockNum] = !muteState[blockNum];
+        btn.classList.toggle('muted', muteState[blockNum]);
+        // Immediately apply gain change
+        if (audioStarted && gainNodes[blockNum]) {
+          var g = gainNodes[blockNum].gain;
+          var target = muteState[blockNum] ? 0 : 0.15;
+          g.cancelScheduledValues(audioCtx.currentTime);
+          g.setValueAtTime(g.value, audioCtx.currentTime);
+          g.linearRampToValueAtTime(target, audioCtx.currentTime + 0.05);
+        }
+      });
+    });
+
+    // ── BLOCK BUTTON HANDLERS ──
+    blockBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var n = parseInt(btn.dataset.block);
+        if (lockedBlocks.has(n)) {
+          // Locked block tapped — snap selection back to active block
+          setTimeout(function() {
+            btn.classList.remove('selected');
+            var activeBtn = document.querySelector('.block-label[data-block="' + activeBlock + '"]');
+            if (activeBtn && !activeBtn.classList.contains('selected')) {
+              activeBtn.classList.add('selected');
+            }
+          }, 10);
+          return;
+        }
+        activeBlock = n;
+        // Update label selection states
+        blockBtns.forEach(function(b) {
+          if (parseInt(b.dataset.block) === n) {
+            b.classList.add('selected');
+          } else {
+            b.classList.remove('selected');
+          }
+        });
+        updateDotStates();
+        updateDotPositions();
+        updateLockButton();
+        syncLfoUI();
+      });
+    });
+
+    // ── LOCK BUTTON ──
+    lockBtn.addEventListener('click', function() {
+      if (lockedBlocks.size === 3) return;
+      if (!audioStarted) initSpatialAudio();
+      lockedBlocks.add(activeBlock);
+      startTimer();
+
+      var found = false;
+      for (var i = 1; i <= 3; i++) {
+        if (!lockedBlocks.has(i)) {
+          activeBlock = i;
+          found = true;
+          break;
+        }
+      }
+
+      updateDotStates();
+      updateDotPositions();
+      updateLockButton();
+      syncLfoUI();
+      startOrbitAnimation();
+
+      if (found) {
+        blockBtns.forEach(function(b) {
+          var bn = parseInt(b.dataset.block);
+          if (bn === activeBlock) {
+            b.classList.add('selected');
+          } else {
+            b.classList.remove('selected');
+          }
+        });
+      }
+    });
+
+    // ── DOT DRAGGING — X/Y via single finger on room ──
+    function getScreenPos(e) {
+      var rect = room.getBoundingClientRect();
+      var cx = e.touches ? e.touches[0].clientX : e.clientX;
+      var cy = e.touches ? e.touches[0].clientY : e.clientY;
+      return { sx: cx - rect.left, sy: cy - rect.top };
+    }
+
+    function onDragStart(e) {
+      if (lockedBlocks.has(activeBlock)) return;
+
+      var w = room.offsetWidth, h = room.offsetHeight;
+      var pos = dotPos[activeBlock];
+      var proj = project(pos.x, pos.y, pos.z, w, h);
+      var screen = getScreenPos(e);
+
+      var dx = screen.sx - proj.sx;
+      var dy = screen.sy - proj.sy;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var hitRadius = lerp(30, 18, pos.z);
+
+      if (dist < hitRadius) {
+        isDragging = true;
+        dragStartScreen = { sx: screen.sx, sy: screen.sy };
+        dragStartPos = { x: pos.x, y: pos.y, z: pos.z };
+        var dotEl = getDotEl(activeBlock);
+        if (dotEl) dotEl.classList.add('dragging');
+        e.preventDefault();
+      }
+    }
+
+    function onDragMove(e) {
+      if (!isDragging) return;
+      var screen = getScreenPos(e);
+      var w = room.offsetWidth, h = room.offsetHeight;
+      var pos = dotPos[activeBlock];
+
+      var dsx = screen.sx - dragStartScreen.sx;
+      var dsy = screen.sy - dragStartScreen.sy;
+
+      // X: horizontal screen movement → X (scaled by current depth)
+      var currentScale = 1.0 / (1.0 + dragStartPos.z * (1.0 / 0.55 - 1.0));
+      var newX = dragStartPos.x + dsx / (w * currentScale);
+
+      // Y: vertical screen movement → Y (up on screen = up in world)
+      // Screen Y is inverted: screen up = negative dsy = positive Y
+      var newY = dragStartPos.y - dsy / (h * currentScale);
+
+      var clamped = clampToRoom(newX, newY, pos.z);
+      pos.x = clamped.x;
+      pos.y = clamped.y;
+
+      updateDotPositions();
+      e.preventDefault();
+    }
+
+    function onDragEnd() {
+      if (isDragging) {
+        var dotEl = getDotEl(activeBlock);
+        if (dotEl) dotEl.classList.remove('dragging');
+        dragCooldown = true;
+        setTimeout(function() { dragCooldown = false; }, 50);
+      }
+      isDragging = false;
+      dragStartScreen = null;
+      dragStartPos = null;
+    }
+
+    // Click-to-place (tap anywhere in room) — sets X and Y at current Z
+    room.addEventListener('click', function(e) {
+      if (lockedBlocks.has(activeBlock)) return;
+      if (isDragging || dragCooldown) return;
+      if (e.target.closest && e.target.closest('.dot')) return;
+
+      var screen = getScreenPos(e);
+      var w = room.offsetWidth, h = room.offsetHeight;
+      var pos = dotPos[activeBlock];
+      // Reverse-project at the current Z depth to find X and Y
+      var vx = w * 0.5;
+      var vy = h * 0.5;
+      var currentScale = 1.0 / (1.0 + pos.z * (1.0 / 0.55 - 1.0));
+      var newX = ((screen.sx - vx) / (w * currentScale)) + 0.5;
+      var newY = 0.5 - ((screen.sy - vy) / (h * currentScale));
+      var clamped = clampToRoom(newX, newY, pos.z);
+      pos.x = clamped.x;
+      pos.y = clamped.y;
+      updateDotPositions();
+    });
+
+    room.addEventListener('mousedown', onDragStart);
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
+    room.addEventListener('touchstart', onDragStart, { passive: false });
+    document.addEventListener('touchmove', onDragMove, { passive: false });
+    document.addEventListener('touchend', onDragEnd);
+
+    // ── RESIZE HANDLING ──
+    function onResize() {
+      resizeCanvas();
+      drawRoom();
+      updateDotPositions();
+    }
+
+    var resizeObs = new ResizeObserver(onResize);
+    resizeObs.observe(room);
+
+    // ── INITIALIZE ──
+    resizeCanvas();
+    drawRoom();
+    updateDotStates();
+    updateDotPositions();
+    updateLockButton();
+    syncLfoUI();
+    if (lfoCanvasA && lfoCanvasB && lfoCanvasC) requestAnimationFrame(animateLfo);
+  })();
+
+  // ── GENRE SELECTOR ──
+  (function() {
+    var items = document.querySelectorAll('.genre-item');
+    items.forEach(function(item) {
+      item.addEventListener('click', function() {
+        items.forEach(function(g) { g.style.color = 'var(--grey)'; });
+        item.style.color = 'var(--white)';
+      });
+    });
+  })();
+
+  // ── LEADERBOARD MINI WAVEFORMS ──
+  (function() {
+    document.querySelectorAll('.lb-wave-row').forEach(function(el) {
+      var seed = parseInt(el.getAttribute('data-seed') || '1');
+      var count = 50;
+      for (var i = 0; i < count; i++) {
+        var s = document.createElement('span');
+        var h = 2 + Math.abs(Math.sin(seed * 3.7 + i * 0.6) * 10) + Math.abs(Math.cos(seed * 1.3 + i * 1.2) * 4);
+        s.style.height = Math.round(h) + 'px';
+        el.appendChild(s);
+      }
+    });
+  })();
+
+  // ── RADIO VISUALIZER ──
+  (function() {
+    var canvas = document.getElementById('radio-visualizer');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var NUM_BARS = 32;
+    var bars = [];
+    var targets = [];
+    for (var i = 0; i < NUM_BARS; i++) {
+      bars[i] = Math.random() * 0.3;
+      targets[i] = Math.random() * 0.3;
+    }
+    var time = 0;
+    function resize() {
+      var rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * (window.devicePixelRatio || 1));
+      canvas.height = Math.round(rect.height * (window.devicePixelRatio || 1));
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    function draw() {
+      time += 0.016;
+      var w = canvas.width;
+      var h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // update targets periodically with organic motion
+      for (var i = 0; i < NUM_BARS; i++) {
+        if (Math.random() < 0.08) {
+          // create frequency-shaped distribution: bass heavy, treble light
+          var freqWeight = 1 - (i / NUM_BARS) * 0.6;
+          var wave = Math.sin(time * 1.2 + i * 0.4) * 0.3;
+          var pulse = Math.sin(time * 0.4) * 0.15;
+          targets[i] = Math.max(0.03, Math.min(1, (Math.random() * 0.5 + wave + pulse) * freqWeight));
+        }
+        // smooth interpolation toward target
+        bars[i] += (targets[i] - bars[i]) * 0.12;
+      }
+
+      var gap = 2 * (window.devicePixelRatio || 1);
+      var barW = Math.max(1, (w - gap * (NUM_BARS - 1)) / NUM_BARS);
+      var x = 0;
+      for (var i = 0; i < NUM_BARS; i++) {
+        var barH = Math.max(1, bars[i] * h * 0.85);
+        var y = h - barH;
+        // gradient from white to grey based on height
+        var alpha = 0.4 + bars[i] * 0.6;
+        ctx.fillStyle = 'rgba(255,255,255,' + alpha.toFixed(2) + ')';
+        ctx.fillRect(Math.round(x), Math.round(y), Math.round(barW), Math.round(barH));
+        x += barW + gap;
+      }
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  })();
+</script>
+</body>
+</html>

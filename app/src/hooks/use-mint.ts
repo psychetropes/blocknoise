@@ -1,11 +1,14 @@
 import { useState, useCallback } from 'react';
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useAppStore } from '../store';
 import { useWallet } from './use-wallet';
+import { getConnection, buildPaymentTransaction } from '../services/solana';
+import { fetchPrices } from '../services/pricing';
 
 interface MintResult {
+  id: string;
   mintAddress: string;
   arweaveUrl: string;
+  metadataUrl: string;
 }
 
 export function useMint() {
@@ -29,35 +32,29 @@ export function useMint() {
 
       try {
         const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-        const rpcUrl = process.env.EXPO_PUBLIC_SOLANA_RPC ?? 'https://api.mainnet-beta.solana.com';
-        const connection = new Connection(rpcUrl, 'confirmed');
+        const connection = getConnection();
 
-        // fetch live price
-        const priceRes = await fetch(`${apiUrl}/price`);
-        const priceData = await priceRes.json();
+        // fetch live prices — never cache longer than 60s
+        const prices = await fetchPrices();
 
-        // todo: build proper spl-token transfer for usdc/skr
-        // for now, build a sol transfer as placeholder
+        // usd-pegged pricing
         const usdAmount = generation.tier === 'pro' ? 20 : 10;
-        const solAmount = usdAmount / priceData.solUsd;
 
-        const transaction = new Transaction().add(
-          SystemProgram.transfer({
-            fromPubkey: wallet.publicKey,
-            toPubkey: new PublicKey('11111111111111111111111111111112'), // placeholder treasury
-            lamports: Math.ceil(solAmount * LAMPORTS_PER_SOL),
-          })
+        // build payment transaction for chosen method
+        const transaction = await buildPaymentTransaction(
+          wallet.publicKey,
+          paymentMethod,
+          usdAmount,
+          prices
         );
 
-        transaction.recentBlockhash = (
-          await connection.getLatestBlockhash()
-        ).blockhash;
-        transaction.feePayer = wallet.publicKey;
-
-        // sign and send via mwa
+        // sign and send via mwa on seeker device
         const signature = await signAndSendTransaction(transaction, connection);
 
-        // upload to arweave
+        // wait for on-chain confirmation
+        await connection.confirmTransaction(signature as string, 'confirmed');
+
+        // upload to arweave + mint nft + save to supabase
         const uploadRes = await fetch(`${apiUrl}/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -71,11 +68,11 @@ export function useMint() {
         });
 
         if (!uploadRes.ok) {
-          throw new Error('upload failed');
+          const body = await uploadRes.text();
+          throw new Error(body || 'upload failed');
         }
 
-        const result = await uploadRes.json();
-        return result;
+        return (await uploadRes.json()) as MintResult;
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'mint failed';
         setError(msg);

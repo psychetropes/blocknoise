@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 import { useAppStore } from '../store';
 import { GenreSelector } from '../components/genre-selector';
+import { useMint } from '../hooks/use-mint';
+import { fetchPrices, calculatePaymentAmount } from '../services/pricing';
 
 interface PriceData {
   sol: number;
@@ -17,53 +19,39 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
   const spatialPath = route.params?.spatialPath ?? null;
   const [prices, setPrices] = useState<PriceData | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<'usdc' | 'sol' | 'skr'>('usdc');
-  const [minting, setMinting] = useState(false);
-  const [mintComplete, setMintComplete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { mint, minting, error } = useMint();
 
   const usdPrice = generation.tier === 'pro' ? 20 : 10;
 
   useEffect(() => {
-    fetchPrices();
+    loadPrices();
   }, []);
 
-  const fetchPrices = async () => {
+  const loadPrices = async () => {
     try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/price`);
-      const data = await res.json();
+      const data = await fetchPrices();
       setPrices(data);
     } catch {
-      setError('failed to fetch prices');
+      // will show "..." for amounts
     }
   };
 
-  const getPaymentAmount = () => {
+  const getPaymentDisplay = () => {
     if (!prices) return '...';
-    const amount = selectedPayment === 'skr' ? usdPrice / 2 : usdPrice;
-    switch (selectedPayment) {
-      case 'usdc':
-        return `${amount} usdc`;
-      case 'sol':
-        return `${(amount / prices.solUsd).toFixed(4)} sol`;
-      case 'skr':
-        return `${(amount / prices.skrUsd).toFixed(2)} skr`;
-    }
+    return calculatePaymentAmount(usdPrice, selectedPayment, prices).display;
   };
 
   const handleMint = async () => {
     if (!wallet.publicKey || !generation.genre) return;
-    setMinting(true);
-    setError(null);
 
-    try {
-      // todo: build transaction, sign via mwa, verify, upload to arweave, mint nft
-      setMintComplete(true);
-      navigation.navigate('leaderboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'mint failed');
-    } finally {
-      setMinting(false);
+    const result = await mint(selectedPayment, spatialPath);
+
+    if (result) {
+      Alert.alert(
+        'minted!',
+        `your ${generation.tier} usi has been permanently stored on arweave.`,
+        [{ text: 'view leaderboard', onPress: () => navigation.navigate('tabs', { screen: 'leaderboard' }) }]
+      );
     }
   };
 
@@ -103,7 +91,7 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={styles.paymentAmount}>{getPaymentAmount()}</Text>
+        <Text style={styles.paymentAmount}>{getPaymentDisplay()}</Text>
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}

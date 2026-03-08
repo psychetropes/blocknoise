@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { setCachedAudio } from '../audio-cache';
 
 const router = Router();
 
@@ -31,7 +32,11 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     if (tier === 'standard') {
       const audio = await generateStem(apiKey, walletAddress, 1);
-      res.json({ url: audio });
+
+      // cache raw base64 for the upload step
+      setCachedAudio(walletAddress, [audio.raw], tier);
+
+      res.json({ url: audio.dataUrl });
     } else {
       // pro: 3 parallel stem generations
       const stems = await Promise.all([
@@ -39,7 +44,11 @@ router.post('/', async (req: Request, res: Response) => {
         generateStem(apiKey, walletAddress, 2),
         generateStem(apiKey, walletAddress, 3),
       ]);
-      res.json({ urls: stems });
+
+      // cache all stems for the upload step
+      setCachedAudio(walletAddress, stems.map((s) => s.raw), tier);
+
+      res.json({ urls: stems.map((s) => s.dataUrl) });
     }
   } catch (err) {
     console.error('generation error:', err);
@@ -53,7 +62,7 @@ async function generateStem(
   apiKey: string,
   walletAddress: string,
   layer: number
-): Promise<string> {
+): Promise<{ dataUrl: string; raw: string }> {
   const response = await fetch(ELEVENLABS_API_URL, {
     method: 'POST',
     headers: {
@@ -73,10 +82,12 @@ async function generateStem(
     throw new Error(`elevenlabs api error: ${response.status} — ${body}`);
   }
 
-  // elevenlabs returns audio binary — convert to base64 data url
   const buffer = await response.arrayBuffer();
   const base64 = Buffer.from(buffer).toString('base64');
-  return `data:audio/mpeg;base64,${base64}`;
+  return {
+    dataUrl: `data:audio/mpeg;base64,${base64}`,
+    raw: base64,
+  };
 }
 
 export { router as generateRouter };

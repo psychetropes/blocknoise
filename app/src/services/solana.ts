@@ -1,15 +1,32 @@
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+} from '@solana/web3.js';
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token';
 
 const getRpcUrl = () =>
   process.env.EXPO_PUBLIC_SOLANA_RPC ?? 'https://api.mainnet-beta.solana.com';
+
+// treasury wallet — receives all mint payments
+const TREASURY = new PublicKey('11111111111111111111111111111112'); // placeholder — replace with real treasury
+
+// token mints
+const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+const SKR_MINT = new PublicKey('SKRu3tAuSFsFbcBYcBFBYeRe7M2GGFMTqWELN7epump');
 
 export function getConnection(): Connection {
   return new Connection(getRpcUrl(), 'confirmed');
 }
 
-export async function buildPaymentTransaction(
+export async function buildSolPaymentTransaction(
   fromPubkey: PublicKey,
-  treasuryPubkey: PublicKey,
   solAmount: number
 ): Promise<Transaction> {
   const connection = getConnection();
@@ -17,7 +34,7 @@ export async function buildPaymentTransaction(
   const transaction = new Transaction().add(
     SystemProgram.transfer({
       fromPubkey,
-      toPubkey: treasuryPubkey,
+      toPubkey: TREASURY,
       lamports: Math.ceil(solAmount * LAMPORTS_PER_SOL),
     })
   );
@@ -27,4 +44,56 @@ export async function buildPaymentTransaction(
   transaction.feePayer = fromPubkey;
 
   return transaction;
+}
+
+export async function buildTokenPaymentTransaction(
+  fromPubkey: PublicKey,
+  tokenMint: 'usdc' | 'skr',
+  amount: number
+): Promise<Transaction> {
+  const connection = getConnection();
+  const mint = tokenMint === 'usdc' ? USDC_MINT : SKR_MINT;
+  const decimals = tokenMint === 'usdc' ? 6 : 9;
+
+  const fromAta = await getAssociatedTokenAddress(mint, fromPubkey);
+  const toAta = await getAssociatedTokenAddress(mint, TREASURY);
+
+  const rawAmount = Math.ceil(amount * 10 ** decimals);
+
+  const transaction = new Transaction().add(
+    createTransferInstruction(
+      fromAta,
+      toAta,
+      fromPubkey,
+      BigInt(rawAmount),
+      [],
+      TOKEN_PROGRAM_ID
+    )
+  );
+
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = fromPubkey;
+
+  return transaction;
+}
+
+export async function buildPaymentTransaction(
+  fromPubkey: PublicKey,
+  paymentMethod: 'usdc' | 'sol' | 'skr',
+  usdAmount: number,
+  prices: { solUsd: number; skrUsd: number }
+): Promise<Transaction> {
+  switch (paymentMethod) {
+    case 'sol': {
+      const solAmount = usdAmount / prices.solUsd;
+      return buildSolPaymentTransaction(fromPubkey, solAmount);
+    }
+    case 'usdc':
+      return buildTokenPaymentTransaction(fromPubkey, 'usdc', usdAmount);
+    case 'skr': {
+      const skrAmount = (usdAmount / 2) / prices.skrUsd;
+      return buildTokenPaymentTransaction(fromPubkey, 'skr', skrAmount);
+    }
+  }
 }

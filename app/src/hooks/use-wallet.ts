@@ -50,7 +50,6 @@ export function useWallet() {
 
         const signedTxs = await mobileWallet.signAndSendTransactions({
           transactions: [transaction],
-          connection,
         });
 
         return signedTxs[0];

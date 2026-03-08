@@ -1,47 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 import { useAppStore } from '../store';
 import { AudioPlayer } from '../components/audio-player';
+import { useGenerate } from '../hooks/use-generate';
 
 export function GenerateScreen({ navigation }: { navigation: any }) {
-  const { wallet, generation, setGeneration } = useAppStore();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { wallet, generation } = useAppStore();
+  const { generate, loading, error } = useGenerate();
 
-  const handleGenerate = async () => {
-    if (!wallet.publicKey) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: wallet.publicKey.toBase58(),
-          tier: generation.tier,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`generation failed: ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (generation.tier === 'standard') {
-        setGeneration({ audioUrl: data.url });
-      } else {
-        setGeneration({ stemUrls: data.urls });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'generation failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleGenerate = () => {
+    generate();
   };
 
   const handleContinue = () => {

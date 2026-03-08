@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { createClient } from '@supabase/supabase-js';
 import { theme } from '../theme';
 import { LeaderboardRow } from '../components/leaderboard-row';
 import { useAppStore } from '../store';
@@ -15,27 +16,56 @@ interface LeaderboardEntry {
   created_at: string;
 }
 
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
 export function LeaderboardScreen() {
   const { wallet } = useAppStore();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, []);
-
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/leaderboard`);
       const data = await res.json();
       setEntries(data);
     } catch {
-      // silent fail — will show empty state
+      // silent fail
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchLeaderboard();
+
+    // supabase realtime — live leaderboard updates
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel('leaderboard-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'votes' },
+        () => fetchLeaderboard()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'usis' },
+        () => fetchLeaderboard()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchLeaderboard]);
 
   const handleVote = async (usiId: string) => {
     if (!wallet.publicKey) return;
@@ -50,10 +80,16 @@ export function LeaderboardScreen() {
           voterWallet: wallet.publicKey.toBase58(),
         }),
       });
+      // optimistic refresh
       fetchLeaderboard();
     } catch {
       // silent fail
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchLeaderboard();
   };
 
   return (
@@ -71,6 +107,13 @@ export function LeaderboardScreen() {
           />
         )}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.cyan}
+          />
+        }
         ListEmptyComponent={
           <Text style={styles.empty}>
             {loading ? 'loading...' : 'no usis minted yet'}

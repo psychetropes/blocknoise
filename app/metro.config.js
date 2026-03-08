@@ -15,4 +15,20 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// web stubs for native-only packages
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform === 'web') {
+    const stubs = {
+      'react-native-track-player': path.resolve(projectRoot, 'web-stubs/react-native-track-player.js'),
+      '@solana-mobile/mobile-wallet-adapter-protocol-web3js': path.resolve(projectRoot, 'web-stubs/solana-mobile.js'),
+      '@solana-mobile/mobile-wallet-adapter-protocol': path.resolve(projectRoot, 'web-stubs/solana-mobile.js'),
+      '@react-three/fiber/native': path.resolve(projectRoot, 'web-stubs/react-three-fiber-native.js'),
+    };
+    if (stubs[moduleName]) {
+      return { type: 'sourceFile', filePath: stubs[moduleName] };
+    }
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;
