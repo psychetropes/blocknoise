@@ -2,8 +2,6 @@ import { Connection, PublicKey } from '@solana/web3.js';
 
 // solana name service program ids
 const NAME_PROGRAM_ID = new PublicKey('namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX');
-const SNS_RECORDS_CLASS = new PublicKey('2KBwVqpRGMRsFERRjNGSTev7mDUkEcxQzYhMnCNeedge');
-
 // .sol tld parent — sns registry root
 const SOL_TLD_AUTHORITY = new PublicKey('58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx');
 

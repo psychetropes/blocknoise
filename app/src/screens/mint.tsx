@@ -61,11 +61,11 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
     } catch {}
   };
 
-  const getPaymentDisplay = () => {
+  const getPaymentAmount = (method: 'usdc' | 'sol' | 'skr') => {
     if (!prices) return '...';
     return calculatePaymentAmount(
       generation.tier === 'pro' ? 20 : 10,
-      selectedPayment,
+      method,
       prices
     ).display;
   };
@@ -127,6 +127,28 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
         <Text style={styles.catalogPreview}>
           {nextCatalog ? `#blocknoise#${nextCatalog}` : '#blocknoise#—'}
         </Text>
+      </View>
+
+      <View style={{ height: 24 }} />
+
+      {/* payment method selector */}
+      <View style={styles.paymentRow}>
+        {(['usdc', 'sol', 'skr'] as const).map((method) => (
+          <RecessButton
+            key={method}
+            selected={selectedPayment === method}
+            onPress={() => setSelectedPayment(method)}
+            style={{ flex: 1 }}
+          >
+            <View style={styles.paymentCard}>
+              <Text style={styles.paymentLabel}>{method.toUpperCase()}</Text>
+              <Text style={styles.paymentAmount}>{getPaymentAmount(method)}</Text>
+              {method === 'skr' && (
+                <Text style={styles.paymentNote}>50% off</Text>
+              )}
+            </View>
+          </RecessButton>
+        ))}
       </View>
 
       <View style={{ flex: 1 }} />
@@ -213,6 +235,37 @@ const styles = StyleSheet.create({
     fontSize: 7,
     color: 'rgba(255,255,255,0.3)',
     marginTop: 2,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  paymentCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+  },
+  paymentLabel: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    opacity: 0.5,
+  },
+  paymentAmount: {
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  paymentNote: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 8,
+    color: colors.white,
+    opacity: 0.4,
   },
   error: {
     fontFamily: 'JetBrainsMono-Regular',

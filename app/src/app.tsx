@@ -8,7 +8,6 @@ import { colors } from './theme';
 export default function App() {
   const [fontsLoaded] = useFonts({
     'ABCSolar-Bold': require('../assets/fonts/ABCSolar-Bold.otf'),
-    'ABCSolar-Regular': require('../assets/fonts/ABCSolar-Regular.otf'),
   });
 
   if (!fontsLoaded) {

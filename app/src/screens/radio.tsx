@@ -166,21 +166,6 @@ export function RadioScreen() {
     await TrackPlayer.skipToPrevious();
   };
 
-  const handleVote = async () => {
-    if (!wallet.publicKey || !nowPlaying) return;
-    try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-      await fetch(`${apiUrl}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          usiId: nowPlaying.id,
-          voterWallet: wallet.publicKey.toBase58(),
-        }),
-      });
-    } catch {}
-  };
-
   const trackWallet = nowPlaying
     ? `${nowPlaying.wallet_address.slice(0, 4)}...${nowPlaying.wallet_address.slice(-4)}`
     : '';

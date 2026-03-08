@@ -48,13 +48,6 @@ export function RecessButton({
     }
   };
 
-  // interpolate the inner rect coords
-  const x1 = anim.interpolate({ inputRange: [0, 1], outputRange: [REST.x1, PRESSED.x1] });
-  const y1 = anim.interpolate({ inputRange: [0, 1], outputRange: [REST.y1, PRESSED.y1] });
-  const x2 = anim.interpolate({ inputRange: [0, 1], outputRange: [REST.x2, PRESSED.x2] });
-  const y2 = anim.interpolate({ inputRange: [0, 1], outputRange: [REST.y2, PRESSED.y2] });
-
-  // for the static SVG we use the rest or pressed values directly
   const coords = selected ? PRESSED : REST;
 
   return (

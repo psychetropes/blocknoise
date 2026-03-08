@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import Irys from '@irys/sdk';
 import { getCachedAudio, clearCachedAudio } from '../audio-cache';
 import { reverseSnsLookup } from '../sns';

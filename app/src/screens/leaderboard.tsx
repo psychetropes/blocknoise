@@ -58,19 +58,6 @@ export function LeaderboardScreen() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchLeaderboard]);
 
-  const handleVote = async (usiId: string) => {
-    if (!wallet.publicKey) return;
-    try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-      await fetch(`${apiUrl}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usiId, voterWallet: wallet.publicKey.toBase58() }),
-      });
-      fetchLeaderboard();
-    } catch {}
-  };
-
   return (
     <View style={styles.screen}>
       {/* header */}
@@ -89,8 +76,6 @@ export function LeaderboardScreen() {
           <LeaderboardRow
             entry={item}
             rank={index + 1}
-            onVote={() => handleVote(item.id)}
-            currentWallet={wallet.publicKey?.toBase58() ?? null}
           />
         )}
         style={styles.list}

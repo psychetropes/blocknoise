@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 import * as THREE from 'three';
-import { colors, theme } from '../../theme';
+import { colors } from '../../theme';
 
 interface BlockCanvasProps {
   stems: string[];

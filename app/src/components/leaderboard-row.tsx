@@ -19,11 +19,9 @@ interface LeaderboardEntry {
 interface LeaderboardRowProps {
   entry: LeaderboardEntry;
   rank: number;
-  onVote: () => void;
-  currentWallet: string | null;
 }
 
-export function LeaderboardRow({ entry, rank, onVote, currentWallet }: LeaderboardRowProps) {
+export function LeaderboardRow({ entry, rank }: LeaderboardRowProps) {
   const soundRef = useRef<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const shortWallet = `${entry.wallet_address.slice(0, 4)}...${entry.wallet_address.slice(-4)}`;
