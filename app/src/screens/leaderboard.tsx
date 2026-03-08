@@ -13,6 +13,7 @@ interface LeaderboardEntry {
   genre: string;
   score: number;
   vote_count: number;
+  catalog_number: number;
   created_at: string;
 }
 

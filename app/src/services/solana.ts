@@ -11,11 +11,19 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 
-const getRpcUrl = () =>
-  process.env.EXPO_PUBLIC_SOLANA_RPC ?? 'https://api.mainnet-beta.solana.com';
+import { config } from '../config';
+
+const getRpcUrl = () => config.rpcUrl;
 
 // treasury wallet — receives all mint payments
-const TREASURY = new PublicKey('11111111111111111111111111111112'); // placeholder — replace with real treasury
+// MUST be set in env — no fallback to prevent sending funds to wrong address
+const TREASURY_ADDRESS = process.env.EXPO_PUBLIC_TREASURY_ADDRESS;
+if (!TREASURY_ADDRESS) {
+  throw new Error(
+    'EXPO_PUBLIC_TREASURY_ADDRESS not set — cannot build payment transactions'
+  );
+}
+const TREASURY = new PublicKey(TREASURY_ADDRESS);
 
 // token mints
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');

@@ -25,7 +25,16 @@ export function setCachedAudio(walletAddress: string, data: string[], tier: stri
 }
 
 export function getCachedAudio(walletAddress: string): CacheEntry | null {
-  return cache.get(walletAddress) ?? null;
+  const entry = cache.get(walletAddress);
+  if (!entry) return null;
+
+  // enforce TTL on read — don't serve stale audio
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    cache.delete(walletAddress);
+    return null;
+  }
+
+  return entry;
 }
 
 export function clearCachedAudio(walletAddress: string): void {

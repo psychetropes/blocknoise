@@ -49,7 +49,7 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
     if (result) {
       Alert.alert(
         'minted!',
-        `your ${generation.tier} usi has been permanently stored on arweave.`,
+        `#blocknoise#${result.catalogNumber} — your ${generation.tier} usi has been permanently stored on arweave.`,
         [{ text: 'view leaderboard', onPress: () => navigation.navigate('tabs', { screen: 'leaderboard' }) }]
       );
     }

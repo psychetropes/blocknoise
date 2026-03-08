@@ -7,6 +7,7 @@ import {
 import { PublicKey } from '@solana/web3.js';
 import { theme } from '../theme';
 import { useAppStore } from '../store';
+import { config } from '../config';
 
 const APP_IDENTITY = {
   name: 'blocknoise',
@@ -23,7 +24,7 @@ export function WalletConnect() {
     try {
       await transact(async (mobileWallet: Web3MobileWallet) => {
         const authResult = await mobileWallet.authorize({
-          cluster: 'mainnet-beta',
+          cluster: config.solanaCluster,
           identity: APP_IDENTITY,
         });
 

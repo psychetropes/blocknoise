@@ -8,18 +8,22 @@ import { voteRouter } from './routes/vote';
 import { radioRouter } from './routes/radio';
 import { priceRouter } from './routes/price';
 import { genresRouter } from './routes/genres';
-import { rateLimiter } from './middleware/rate-limit';
+import { rateLimiter, generateLimiter } from './middleware/rate-limit';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT ?? 3001;
 
-app.use(cors());
+// restrict CORS to known origins in production
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : undefined; // undefined = allow all (dev mode)
+app.use(cors(allowedOrigins ? { origin: allowedOrigins } : undefined));
 app.use(express.json());
 app.use(rateLimiter);
 
-app.use('/generate', generateRouter);
+app.use('/generate', generateLimiter, generateRouter);
 app.use('/upload', uploadRouter);
 app.use('/leaderboard', leaderboardRouter);
 app.use('/vote', voteRouter);

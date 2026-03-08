@@ -9,6 +9,7 @@ import {
   Connection,
 } from '@solana/web3.js';
 import { useAppStore } from '../store';
+import { config } from '../config';
 
 const APP_IDENTITY = {
   name: 'blocknoise',
@@ -24,7 +25,7 @@ export function useWallet() {
     try {
       await transact(async (mobileWallet: Web3MobileWallet) => {
         const authResult = await mobileWallet.authorize({
-          cluster: 'mainnet-beta',
+          cluster: config.solanaCluster,
           identity: APP_IDENTITY,
         });
         const pubkey = new PublicKey(authResult.accounts[0].address);
@@ -44,7 +45,7 @@ export function useWallet() {
     async (transaction: Transaction, connection: Connection) => {
       return transact(async (mobileWallet: Web3MobileWallet) => {
         await mobileWallet.authorize({
-          cluster: 'mainnet-beta',
+          cluster: config.solanaCluster,
           identity: APP_IDENTITY,
         });
 

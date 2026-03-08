@@ -6,9 +6,11 @@ import { fetchPrices } from '../services/pricing';
 
 interface MintResult {
   id: string;
+  catalogNumber: number;
   mintAddress: string;
   arweaveUrl: string;
   metadataUrl: string;
+  stemUrls?: string[];
 }
 
 export function useMint() {

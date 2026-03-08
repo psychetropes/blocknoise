@@ -67,26 +67,31 @@ blocknoise/
 ### install
 
 ```bash
-git clone https://github.com/your-org/blocknoise.git
+git clone https://github.com/psychetropes/blocknoise.git
 cd blocknoise
 npm install
 ```
 
 ### environment variables
 
-copy `.env.example` and fill in values:
+copy `.env.example` to `server/.env` and `app/.env`, then fill in values:
 
 ```bash
 # server/.env
 ELEVENLABS_API_KEY=your_key_here
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_KEY=your_service_key
+SOLANA_NETWORK=devnet
+IRYS_WALLET_KEY=your_base58_private_key
+TREASURY_ADDRESS=your_solana_wallet_pubkey
 
 # app/.env
 EXPO_PUBLIC_API_URL=http://192.168.1.x:3001
-EXPO_PUBLIC_SOLANA_RPC=https://api.mainnet-beta.solana.com
+EXPO_PUBLIC_SOLANA_NETWORK=devnet
+EXPO_PUBLIC_SOLANA_RPC=https://api.devnet.solana.com
 EXPO_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+EXPO_PUBLIC_TREASURY_ADDRESS=your_solana_wallet_pubkey
 ```
 
 ### database setup
@@ -130,12 +135,15 @@ adb install path/to/blocknoise.apk
 
 ## key design decisions
 
-- **one mint per wallet** — enforced at db level (unique constraint)
+- **multiple mints per wallet** — each mint gets a serial catalog number (#blocknoise#N)
 - **usd-pegged pricing** — live conversion at mint time via jupiter
 - **api key server-side only** — elevenlabs key never leaves the express server
 - **loop: true on all generation** — seamless audio looping at source
 - **arweave = permanent** — no delete or update flows
 - **skr holders get 2× vote weight** — checked on-chain at vote time
+- **spatial audio via webview bridge** — hrtf panning, lfo modulation, 3d stem placement
+- **payment replay protection** — tx signatures stored to prevent double-mint
+- **rate limiting** — global 30 req/min + generate endpoint 5 req/min
 
 ## licence
 

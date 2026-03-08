@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 import { AudioPlayer } from './audio-player';
+import { resolveArweaveUrl } from '../utils/arweave';
 
 interface LeaderboardEntry {
   id: string;
@@ -11,6 +12,7 @@ interface LeaderboardEntry {
   genre: string;
   score: number;
   vote_count: number;
+  catalog_number: number;
 }
 
 interface LeaderboardRowProps {
@@ -36,6 +38,7 @@ export function LeaderboardRow({ entry, rank, onVote, currentWallet }: Leaderboa
         <View style={styles.info}>
           <View style={styles.nameRow}>
             <Text style={styles.wallet}>{shortWallet}</Text>
+            <Text style={styles.catalogNumber}>#blocknoise#{entry.catalog_number}</Text>
             {entry.tier === 'pro' && (
               <Text style={styles.proBadge}>pro</Text>
             )}
@@ -50,7 +53,7 @@ export function LeaderboardRow({ entry, rank, onVote, currentWallet }: Leaderboa
 
       {expanded && (
         <View style={styles.expandedContent}>
-          <AudioPlayer uri={entry.arweave_url} />
+          <AudioPlayer uri={resolveArweaveUrl(entry.arweave_url)} />
           {!isOwnEntry && currentWallet && (
             <TouchableOpacity style={styles.voteButton} onPress={onVote}>
               <Text style={styles.voteText}>upvote</Text>
@@ -95,6 +98,11 @@ const styles = StyleSheet.create({
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 14,
     color: theme.cream,
+  },
+  catalogNumber: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 10,
+    color: theme.muted,
   },
   proBadge: {
     fontFamily: 'JetBrainsMono-Regular',

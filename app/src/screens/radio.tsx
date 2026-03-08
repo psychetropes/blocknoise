@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, AppState } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import TrackPlayer, {
   State,
   usePlaybackState,
@@ -10,6 +10,8 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 import { theme } from '../theme';
 import { useAppStore } from '../store';
+import { SpatialAudioBridge } from '../components/block/spatial-audio-bridge';
+import { resolveArweaveUrl, resolveArweaveUrls } from '../utils/arweave';
 
 interface RadioTrack {
   wallet_address: string;
@@ -17,6 +19,9 @@ interface RadioTrack {
   genre: string;
   tier: 'standard' | 'pro';
   id: string;
+  stem_urls: string[] | null;
+  spatial_path: number[][][] | null;
+  catalog_number: number;
 }
 
 let playerInitialized = false;
@@ -45,17 +50,26 @@ async function setupPlayer() {
   }
 }
 
+// default spatial positions for pro tracks without recorded paths
+const DEFAULT_POSITIONS: [number, number, number][] = [
+  [-0.5, 0.3, 0],
+  [0.5, -0.2, 0.3],
+  [0, 0.5, -0.4],
+];
+
 export function RadioScreen() {
   const { wallet } = useAppStore();
   const playbackState = usePlaybackState();
   const [playlist, setPlaylist] = useState<RadioTrack[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [spatialMode, setSpatialMode] = useState(false);
+  const [spatialPositions, setSpatialPositions] = useState<[number, number, number][]>(DEFAULT_POSITIONS);
   const [waveHeights, setWaveHeights] = useState<number[]>(
     Array.from({ length: 20 }, () => 8)
   );
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isPlaying = playbackState.state === State.Playing;
+  const isPlaying = playbackState.state === State.Playing || spatialMode;
   const nowPlaying = playlist[currentIndex] ?? null;
 
   useEffect(() => {
@@ -80,10 +94,31 @@ export function RadioScreen() {
     };
   }, [isPlaying]);
 
-  // track change listener
+  // track change — switch between spatial bridge and standard TrackPlayer
   useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async (event) => {
     if (event.index !== undefined) {
       setCurrentIndex(event.index);
+
+      const track = playlist[event.index];
+      if (track?.tier === 'pro' && track.stem_urls && track.stem_urls.length > 0) {
+        // pro track — pause TrackPlayer, use spatial audio bridge
+        await TrackPlayer.pause();
+        setSpatialMode(true);
+
+        // use recorded spatial positions or defaults
+        if (track.spatial_path && track.spatial_path.length > 0) {
+          setSpatialPositions(
+            track.spatial_path.map((path) =>
+              [path[0]?.[0] ?? 0, path[0]?.[1] ?? 0, path[0]?.[2] ?? 0] as [number, number, number]
+            )
+          );
+        } else {
+          setSpatialPositions(DEFAULT_POSITIONS);
+        }
+      } else {
+        // standard track — tear down bridge, use TrackPlayer
+        setSpatialMode(false);
+      }
     }
   });
 
@@ -96,9 +131,9 @@ export function RadioScreen() {
 
       if (data.length > 0) {
         await TrackPlayer.reset();
-        const tracks = data.map((track, i) => ({
+        const tracks = data.map((track) => ({
           id: track.id,
-          url: track.arweave_url,
+          url: resolveArweaveUrl(track.arweave_url),
           title: `${track.wallet_address.slice(0, 4)}...${track.wallet_address.slice(-4)}`,
           artist: `blocknoise — ${track.genre}`,
           artwork: 'https://blocknoise.xyz/cover.png',
@@ -111,18 +146,32 @@ export function RadioScreen() {
   };
 
   const handlePlayPause = async () => {
-    if (isPlaying) {
+    if (spatialMode) {
+      // toggle spatial off to pause
+      setSpatialMode(false);
+      return;
+    }
+
+    if (playbackState.state === State.Playing) {
       await TrackPlayer.pause();
     } else {
-      await TrackPlayer.play();
+      // check if current track is pro with stems
+      const track = playlist[currentIndex];
+      if (track?.tier === 'pro' && track.stem_urls && track.stem_urls.length > 0) {
+        setSpatialMode(true);
+      } else {
+        await TrackPlayer.play();
+      }
     }
   };
 
   const handleNext = async () => {
+    setSpatialMode(false);
     await TrackPlayer.skipToNext();
   };
 
   const handlePrev = async () => {
+    setSpatialMode(false);
     await TrackPlayer.skipToPrevious();
   };
 
@@ -157,9 +206,12 @@ export function RadioScreen() {
             <Text style={styles.walletAddress}>
               {shortWallet(nowPlaying.wallet_address)}
             </Text>
+            <Text style={styles.catalogLabel}>
+              #blocknoise#{nowPlaying.catalog_number}
+            </Text>
             <Text style={styles.genreTag}>{nowPlaying.genre}</Text>
             {nowPlaying.tier === 'pro' && (
-              <Text style={styles.proBadge}>pro</Text>
+              <Text style={styles.proBadge}>pro — spatial</Text>
             )}
 
             <View style={styles.waveform}>
@@ -175,6 +227,15 @@ export function RadioScreen() {
           <Text style={styles.empty}>no tracks available</Text>
         )}
       </View>
+
+      {/* spatial audio bridge — hidden webview for pro HRTF playback */}
+      {spatialMode && nowPlaying?.stem_urls && nowPlaying.stem_urls.length > 0 && (
+        <SpatialAudioBridge
+          stemUrls={resolveArweaveUrls(nowPlaying.stem_urls)}
+          positions={spatialPositions}
+          isPlaying={spatialMode}
+        />
+      )}
 
       <View style={styles.controls}>
         <TouchableOpacity style={styles.skipButton} onPress={handlePrev}>
@@ -242,6 +303,12 @@ const styles = StyleSheet.create({
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 18,
     color: theme.cyan,
+    marginBottom: 4,
+  },
+  catalogLabel: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 11,
+    color: theme.muted,
     marginBottom: 8,
   },
   genreTag: {
