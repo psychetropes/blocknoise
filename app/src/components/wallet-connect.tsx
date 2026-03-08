@@ -1,17 +1,17 @@
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import {
   transact,
   Web3MobileWallet,
 } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import { PublicKey } from '@solana/web3.js';
-import { theme } from '../theme';
+import { colors } from '../theme';
 import { useAppStore } from '../store';
 import { config } from '../config';
 
 const APP_IDENTITY = {
   name: 'blocknoise',
-  uri: 'https://blocknoise.xyz',
+  uri: 'https://blocknoise.io',
   icon: 'favicon.ico',
 };
 
@@ -52,27 +52,23 @@ export function WalletConnect() {
     });
   }, [setWallet]);
 
+  // connected — just show disconnect label (wallet addr shown by parent)
   if (wallet.connected && wallet.publicKey) {
     return (
-      <View style={styles.connectedContainer}>
-        <Text style={styles.walletAddress}>
-          {wallet.publicKey.toBase58().slice(0, 4)}...
-          {wallet.publicKey.toBase58().slice(-4)}
-        </Text>
-        <TouchableOpacity style={styles.disconnectButton} onPress={handleDisconnect}>
-          <Text style={styles.disconnectText}>disconnect</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity onPress={handleDisconnect}>
+        <Text style={styles.disconnectText}>DISCONNECT</Text>
+      </TouchableOpacity>
     );
   }
 
+  // disconnected — full-width white button
   return (
     <TouchableOpacity
-      style={styles.connectButton}
+      style={styles.btnW}
       onPress={handleConnect}
       disabled={wallet.connecting}
     >
-      <Text style={styles.connectText}>
+      <Text style={styles.btnWText}>
         {wallet.connecting ? 'connecting...' : 'connect wallet'}
       </Text>
     </TouchableOpacity>
@@ -80,36 +76,26 @@ export function WalletConnect() {
 }
 
 const styles = StyleSheet.create({
-  connectButton: {
-    backgroundColor: theme.cyan,
-    paddingHorizontal: 48,
-    paddingVertical: 16,
-    borderRadius: 8,
-  },
-  connectText: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 18,
-    color: theme.bg,
-  },
-  connectedContainer: {
+  btnW: {
+    backgroundColor: colors.white,
+    paddingVertical: 20,
     alignItems: 'center',
-    gap: 12,
+    marginHorizontal: 28,
   },
-  walletAddress: {
+  btnWText: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 14,
-    color: theme.cyan,
-  },
-  disconnectButton: {
-    borderWidth: 1,
-    borderColor: theme.muted,
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 6,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.black,
+    textTransform: 'lowercase',
+    letterSpacing: 2,
   },
   disconnectText: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 12,
-    color: theme.muted,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 3,
   },
 });

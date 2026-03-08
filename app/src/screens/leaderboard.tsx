@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
-import { theme } from '../theme';
+import { colors } from '../theme';
 import { LeaderboardRow } from '../components/leaderboard-row';
 import { useAppStore } from '../store';
 
@@ -30,6 +30,10 @@ export function LeaderboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const shortWallet = wallet.publicKey
+    ? `${wallet.publicKey.toBase58().slice(0, 4)}...${wallet.publicKey.toBase58().slice(-4)}`
+    : '';
+
   const fetchLeaderboard = useCallback(async () => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
@@ -37,7 +41,6 @@ export function LeaderboardScreen() {
       const data = await res.json();
       setEntries(data);
     } catch {
-      // silent fail
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -46,57 +49,39 @@ export function LeaderboardScreen() {
 
   useEffect(() => {
     fetchLeaderboard();
-
-    // supabase realtime — live leaderboard updates
     if (!supabase) return;
-
     const channel = supabase
       .channel('leaderboard-live')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'votes' },
-        () => fetchLeaderboard()
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'usis' },
-        () => fetchLeaderboard()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => fetchLeaderboard())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'usis' }, () => fetchLeaderboard())
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchLeaderboard]);
 
   const handleVote = async (usiId: string) => {
     if (!wallet.publicKey) return;
-
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       await fetch(`${apiUrl}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          usiId,
-          voterWallet: wallet.publicKey.toBase58(),
-        }),
+        body: JSON.stringify({ usiId, voterWallet: wallet.publicKey.toBase58() }),
       });
-      // optimistic refresh
       fetchLeaderboard();
-    } catch {
-      // silent fail
-    }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchLeaderboard();
+    } catch {}
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>leaderboard</Text>
+    <View style={styles.screen}>
+      {/* header */}
+      <View style={styles.header}>
+        <Text style={styles.walletAddr}>{shortWallet}</Text>
+        <Text style={styles.lockedLabel}>LOCKED</Text>
+      </View>
+
+      <View style={{ height: 16 }} />
+      <Text style={styles.title}>LEADERBOARD</Text>
+
       <FlatList
         data={entries}
         keyExtractor={(item) => item.id}
@@ -108,12 +93,13 @@ export function LeaderboardScreen() {
             currentWallet={wallet.publicKey?.toBase58() ?? null}
           />
         )}
-        contentContainerStyle={styles.list}
+        style={styles.list}
+        contentContainerStyle={{ paddingBottom: 24 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.cyan}
+            onRefresh={() => { setRefreshing(true); fetchLeaderboard(); }}
+            tintColor={colors.white}
           />
         }
         ListEmptyComponent={
@@ -127,25 +113,50 @@ export function LeaderboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: theme.bg,
+    backgroundColor: colors.blue,
+    paddingTop: 28,
+    paddingHorizontal: 28,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: -4,
+  },
+  walletAddr: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  lockedLabel: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 3,
   },
   title: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 28,
-    color: theme.cream,
-    padding: 24,
-    paddingBottom: 16,
+    fontFamily: 'ABCSolar-Bold',
+    fontSize: 36,
+    color: colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    lineHeight: 38,
+    textAlign: 'center',
   },
   list: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    flex: 1,
+    marginTop: 12,
+    marginHorizontal: -4,
   },
   empty: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 14,
-    color: theme.muted,
+    color: colors.grey,
     textAlign: 'center',
     marginTop: 48,
   },

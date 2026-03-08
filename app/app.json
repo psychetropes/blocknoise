@@ -6,9 +6,9 @@
     "orientation": "portrait",
     "platforms": ["android", "web"],
     "android": {
-      "package": "xyz.blocknoise.app",
+      "package": "io.blocknoise.app",
       "adaptiveIcon": {
-        "backgroundColor": "#080A0C"
+        "backgroundColor": "#0012FF"
       }
     },
     "plugins": [

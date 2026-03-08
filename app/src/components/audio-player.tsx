@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Audio, AVPlaybackStatus } from 'expo-av';
-import { theme } from '../theme';
+import { colors } from '../theme';
 
 interface AudioPlayerProps {
   uri: string;
@@ -55,80 +55,67 @@ export function AudioPlayer({ uri, label }: AudioPlayerProps) {
   };
 
   const progress = duration > 0 ? position / duration : 0;
+  const barCount = 40;
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View style={styles.row}>
-        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
-          <Text style={styles.playIcon}>{isPlaying ? '||' : '>'}</Text>
-        </TouchableOpacity>
-        <View style={styles.progressContainer}>
-          <View style={styles.progressTrack}>
-            <View
-              style={[styles.progressFill, { width: `${progress * 100}%` }]}
-            />
-          </View>
-          <Text style={styles.time}>
-            {formatTime(position)} / {formatTime(duration)}
-          </Text>
-        </View>
+      <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
+        <Text style={styles.playIcon}>{isPlaying ? '||' : '\u25B6'}</Text>
+      </TouchableOpacity>
+      <View style={styles.waveformTrack}>
+        {Array.from({ length: barCount }, (_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.bar,
+              {
+                height: 4 + Math.abs(Math.sin(1.5 + i * 0.7) * 20) + Math.abs(Math.cos(3 + i * 1.3) * 6),
+                backgroundColor: i / barCount < progress
+                  ? colors.white
+                  : 'rgba(0,0,0,0.3)',
+              },
+            ]}
+          />
+        ))}
       </View>
+      <Text style={styles.time}>{formatTime(position)}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    backgroundColor: theme.bg2,
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: theme.muted2,
-  },
-  label: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
-    color: theme.muted,
-    marginBottom: 8,
-  },
-  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingVertical: 14,
   },
   playButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.cyan,
+    backgroundColor: colors.black,
     justifyContent: 'center',
     alignItems: 'center',
   },
   playIcon: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 14,
-    color: theme.bg,
+    fontSize: 12,
+    color: colors.white,
   },
-  progressContainer: {
+  waveformTrack: {
     flex: 1,
+    height: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 1,
   },
-  progressTrack: {
-    height: 4,
-    backgroundColor: theme.muted2,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: theme.cyan,
-    borderRadius: 2,
+  bar: {
+    flex: 1,
+    minWidth: 2,
   },
   time: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 10,
-    color: theme.muted,
-    marginTop: 4,
+    color: colors.white,
   },
 });

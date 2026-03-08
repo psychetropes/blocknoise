@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { theme } from '../theme';
+import { colors } from '../theme';
 
 interface RadioPlayerProps {
   walletAddress: string;
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   nowPlaying: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 10,
-    color: theme.muted,
+    color: colors.grey,
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 8,
@@ -49,13 +49,13 @@ const styles = StyleSheet.create({
   wallet: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 18,
-    color: theme.cyan,
+    color: colors.white,
     marginBottom: 4,
   },
   genre: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 12,
-    color: theme.muted,
+    color: colors.grey,
     marginBottom: 16,
   },
   waveform: {
@@ -66,7 +66,6 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 3,
-    backgroundColor: theme.cyan,
-    borderRadius: 1.5,
+    backgroundColor: colors.white,
   },
 });

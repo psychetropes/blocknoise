@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { theme } from '../theme';
+import { colors } from '../theme';
 
 interface GenreSelectorProps {
   selected: string | null;
@@ -21,7 +21,6 @@ export function GenreSelector({ selected, onSelect }: GenreSelectorProps) {
       const data = await res.json();
       setGenres(data.map((g: { name: string }) => g.name));
     } catch {
-      // fallback genres
       setGenres([
         'ambient', 'drone', 'experimental pop', 'glitch', 'harsh noise',
         'idm', 'industrial', 'lo-fi', 'minimalism', 'noise wall',
@@ -66,9 +65,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontFamily: 'ABCFavorit-Bold',
+    fontFamily: 'ABCSolar-Bold',
     fontSize: 14,
-    color: theme.cream,
+    color: colors.white,
     marginBottom: 12,
   },
   scroll: {
@@ -76,23 +75,25 @@ const styles = StyleSheet.create({
     paddingRight: 24,
   },
   chip: {
-    backgroundColor: theme.bg2,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.muted2,
+    backgroundColor: colors.black,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 3,
+    borderColor: colors.black,
   },
   chipActive: {
-    borderColor: theme.cyan,
-    backgroundColor: theme.bg,
+    backgroundColor: colors.black,
+    borderColor: colors.black,
   },
   chipText: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 12,
-    color: theme.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   chipTextActive: {
-    color: theme.cyan,
+    color: colors.white,
   },
 });

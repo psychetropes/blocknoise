@@ -1,12 +1,19 @@
-// polyfills — MUST be first imports (before any solana/web3 code)
+// polyfills — separate module so side effects run before app tree evaluates
+import './polyfills';
 import 'react-native-get-random-values';
-import { Buffer } from 'buffer';
-global.Buffer = Buffer;
 
+import { Platform } from 'react-native';
 import { registerRootComponent } from 'expo';
-import TrackPlayer from 'react-native-track-player';
 import App from './src/app';
-import { playbackService } from './src/services/track-player';
 
 registerRootComponent(App);
-TrackPlayer.registerPlaybackService(() => playbackService);
+
+if (Platform.OS !== 'web') {
+  try {
+    const TrackPlayer = require('react-native-track-player').default;
+    const { playbackService } = require('./src/services/track-player');
+    TrackPlayer.registerPlaybackService(() => playbackService);
+  } catch (e) {
+    console.warn('track-player unavailable:', e.message);
+  }
+}

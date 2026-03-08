@@ -8,8 +8,9 @@ import TrackPlayer, {
   Capability,
   RepeatMode,
 } from 'react-native-track-player';
-import { theme } from '../theme';
+import { colors } from '../theme';
 import { useAppStore } from '../store';
+import { RecessButton } from '../components/recess-button';
 import { SpatialAudioBridge } from '../components/block/spatial-audio-bridge';
 import { resolveArweaveUrl, resolveArweaveUrls } from '../utils/arweave';
 
@@ -46,12 +47,10 @@ async function setupPlayer() {
     await TrackPlayer.setRepeatMode(RepeatMode.Queue);
     playerInitialized = true;
   } catch {
-    // player may already be set up
     playerInitialized = true;
   }
 }
 
-// default spatial positions for pro tracks without recorded paths
 const DEFAULT_POSITIONS: [number, number, number][] = [
   [-0.5, 0.3, 0],
   [0.5, -0.2, 0.3],
@@ -73,6 +72,10 @@ export function RadioScreen() {
   const isPlaying = playbackState.state === State.Playing || spatialMode;
   const nowPlaying = playlist[currentIndex] ?? null;
 
+  const shortWallet = wallet.publicKey
+    ? `${wallet.publicKey.toBase58().slice(0, 4)}...${wallet.publicKey.toBase58().slice(-4)}`
+    : '';
+
   useEffect(() => {
     setupPlayer().then(fetchPlaylist);
     return () => {
@@ -80,7 +83,6 @@ export function RadioScreen() {
     };
   }, []);
 
-  // animate waveform bars
   useEffect(() => {
     if (isPlaying) {
       animRef.current = setInterval(() => {
@@ -95,18 +97,13 @@ export function RadioScreen() {
     };
   }, [isPlaying]);
 
-  // track change — switch between spatial bridge and standard TrackPlayer
   useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async (event) => {
     if (event.index !== undefined) {
       setCurrentIndex(event.index);
-
       const track = playlist[event.index];
       if (track?.tier === 'pro' && track.stem_urls && track.stem_urls.length > 0) {
-        // pro track — pause TrackPlayer, use spatial audio bridge
         await TrackPlayer.pause();
         setSpatialMode(true);
-
-        // use recorded spatial positions or defaults
         if (track.spatial_path && track.spatial_path.length > 0) {
           setSpatialPositions(
             track.spatial_path.map((path) =>
@@ -117,7 +114,6 @@ export function RadioScreen() {
           setSpatialPositions(DEFAULT_POSITIONS);
         }
       } else {
-        // standard track — tear down bridge, use TrackPlayer
         setSpatialMode(false);
       }
     }
@@ -129,7 +125,6 @@ export function RadioScreen() {
       const res = await fetch(`${apiUrl}/radio`);
       const data: RadioTrack[] = await res.json();
       setPlaylist(data);
-
       if (data.length > 0) {
         await TrackPlayer.reset();
         const tracks = data.map((track) => ({
@@ -137,26 +132,21 @@ export function RadioScreen() {
           url: resolveArweaveUrl(track.arweave_url),
           title: track.display_name ?? `${track.wallet_address.slice(0, 4)}...${track.wallet_address.slice(-4)}`,
           artist: `blocknoise — ${track.genre}`,
-          artwork: 'https://blocknoise.xyz/cover.png',
+          artwork: 'https://blocknoise.io/cover.png',
         }));
         await TrackPlayer.add(tracks);
       }
-    } catch {
-      // silent fail
-    }
+    } catch {}
   };
 
   const handlePlayPause = async () => {
     if (spatialMode) {
-      // toggle spatial off to pause
       setSpatialMode(false);
       return;
     }
-
     if (playbackState.state === State.Playing) {
       await TrackPlayer.pause();
     } else {
-      // check if current track is pro with stems
       const track = playlist[currentIndex];
       if (track?.tier === 'pro' && track.stem_urls && track.stem_urls.length > 0) {
         setSpatialMode(true);
@@ -188,48 +178,96 @@ export function RadioScreen() {
           voterWallet: wallet.publicKey.toBase58(),
         }),
       });
-    } catch {
-      // silent fail
-    }
+    } catch {}
   };
 
-  const shortWallet = (addr: string) =>
-    `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+  const trackWallet = nowPlaying
+    ? `${nowPlaying.wallet_address.slice(0, 4)}...${nowPlaying.wallet_address.slice(-4)}`
+    : '';
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>seeker radio</Text>
-
-      <View style={styles.nowPlayingCard}>
-        {nowPlaying ? (
-          <>
-            <Text style={styles.nowLabel}>now playing</Text>
-            <Text style={styles.walletAddress}>
-              {nowPlaying.display_name ?? shortWallet(nowPlaying.wallet_address)}
-            </Text>
-            <Text style={styles.catalogLabel}>
-              #blocknoise#{nowPlaying.catalog_number}
-            </Text>
-            <Text style={styles.genreTag}>{nowPlaying.genre}</Text>
-            {nowPlaying.tier === 'pro' && (
-              <Text style={styles.proBadge}>pro — spatial</Text>
-            )}
-
-            <View style={styles.waveform}>
-              {waveHeights.map((h, i) => (
-                <View
-                  key={i}
-                  style={[styles.waveBar, { height: h }]}
-                />
-              ))}
-            </View>
-          </>
-        ) : (
-          <Text style={styles.empty}>no tracks available</Text>
-        )}
+    <View style={styles.screen}>
+      {/* header */}
+      <View style={styles.header}>
+        <Text style={styles.walletAddr}>{shortWallet}</Text>
+        <Text style={styles.lockedLabel}>LOCKED</Text>
       </View>
 
-      {/* spatial audio bridge — hidden webview for pro HRTF playback */}
+      <View style={{ height: 24 }} />
+
+      {/* BLOCK NOISE title */}
+      <View style={{ alignItems: 'center' }}>
+        <Text style={styles.titleLine}>BLOCK</Text>
+        <Text style={styles.titleLine}>NOISE</Text>
+      </View>
+      <Text style={styles.radioSubtitle}>seeker radio</Text>
+
+      <View style={{ height: 24 }} />
+
+      {/* visualizer recess box */}
+      <RecessButton style={{ aspectRatio: 1 }}>
+        <View style={styles.waveformContainer}>
+          {waveHeights.map((h, i) => (
+            <View
+              key={i}
+              style={[styles.waveBar, { height: h }]}
+            />
+          ))}
+        </View>
+      </RecessButton>
+
+      <View style={{ height: 16 }} />
+
+      {/* now playing info */}
+      {nowPlaying && (
+        <View style={styles.trackInfo}>
+          <Text style={styles.trackWallet}>
+            {nowPlaying.display_name ?? trackWallet}
+          </Text>
+          <Text style={styles.trackCatalog}>
+            #blocknoise#{nowPlaying.catalog_number}
+          </Text>
+          <Text style={styles.trackGenre}>{nowPlaying.genre}</Text>
+        </View>
+      )}
+
+      <View style={{ height: 16 }} />
+
+      {/* transport controls — recess buttons */}
+      <View style={styles.controls}>
+        <RecessButton
+          onPress={handlePrev}
+          style={{ width: 48, height: 48 }}
+        >
+          <View style={styles.ctrlInner}>
+            <Text style={styles.ctrlIcon}>{'\u25C0\u25C0'}</Text>
+          </View>
+        </RecessButton>
+
+        <RecessButton
+          onPress={handlePlayPause}
+          style={{ width: 60, height: 60 }}
+        >
+          <View style={styles.ctrlInner}>
+            <Text style={styles.ctrlMainIcon}>
+              {isPlaying ? '\u275A\u275A' : '\u25B6'}
+            </Text>
+          </View>
+        </RecessButton>
+
+        <RecessButton
+          onPress={handleNext}
+          style={{ width: 48, height: 48 }}
+        >
+          <View style={styles.ctrlInner}>
+            <Text style={styles.ctrlIcon}>{'\u25B6\u25B6'}</Text>
+          </View>
+        </RecessButton>
+      </View>
+
+      <View style={{ flex: 1 }} />
+
+      {/* spatial audio bridge */}
       {spatialMode && nowPlaying?.stem_urls && nowPlaying.stem_urls.length > 0 && (
         <SpatialAudioBridge
           stemUrls={resolveArweaveUrls(nowPlaying.stem_urls)}
@@ -237,157 +275,108 @@ export function RadioScreen() {
           isPlaying={spatialMode}
         />
       )}
-
-      <View style={styles.controls}>
-        <TouchableOpacity style={styles.skipButton} onPress={handlePrev}>
-          <Text style={styles.skipText}>prev</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
-          <Text style={styles.playButtonText}>
-            {isPlaying ? 'pause' : 'play'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.skipButton} onPress={handleNext}>
-          <Text style={styles.skipText}>next</Text>
-        </TouchableOpacity>
-      </View>
-
-      {nowPlaying && wallet.connected && (
-        <TouchableOpacity style={styles.voteButton} onPress={handleVote}>
-          <Text style={styles.voteButtonText}>upvote</Text>
-        </TouchableOpacity>
-      )}
-
-      <Text style={styles.queueInfo}>
-        {playlist.length > 0
-          ? `${currentIndex + 1} / ${playlist.length} tracks`
-          : 'queue empty'}
-      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: theme.bg,
+    backgroundColor: colors.blue,
+    paddingTop: 28,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
+    marginTop: -4,
   },
-  title: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 28,
-    color: theme.cream,
-    marginTop: 24,
-    marginBottom: 32,
-  },
-  nowPlayingCard: {
-    width: '100%',
-    backgroundColor: theme.bg2,
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.muted2,
-  },
-  nowLabel: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 10,
-    color: theme.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 12,
-  },
-  walletAddress: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 18,
-    color: theme.cyan,
-    marginBottom: 4,
-  },
-  catalogLabel: {
+  walletAddr: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 11,
-    color: theme.muted,
-    marginBottom: 8,
+    fontWeight: '700',
+    color: colors.white,
   },
-  genreTag: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 12,
-    color: theme.muted,
-    backgroundColor: theme.bg,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  proBadge: {
+  lockedLabel: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 10,
-    color: theme.magenta,
-    marginBottom: 24,
+    fontWeight: '700',
+    color: colors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 3,
   },
-  waveform: {
+  titleLine: {
+    fontFamily: 'ABCSolar-Bold',
+    fontSize: 68,
+    color: colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    lineHeight: 68,
+  },
+  radioSubtitle: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  waveformContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 48,
-    gap: 3,
-    marginTop: 16,
+    justifyContent: 'center',
+    gap: 4,
   },
   waveBar: {
     width: 4,
-    backgroundColor: theme.cyan,
-    borderRadius: 2,
+    backgroundColor: colors.white,
   },
-  empty: {
+  trackInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  trackWallet: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 14,
-    color: theme.muted,
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  trackCatalog: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 7,
+    color: 'rgba(255,255,255,0.35)',
+  },
+  trackGenre: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 8,
+    color: colors.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   controls: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
-    marginTop: 32,
   },
-  skipButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  ctrlInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  skipText: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 14,
-    color: theme.muted,
+  ctrlIcon: {
+    fontSize: 12,
+    color: colors.white,
   },
-  playButton: {
-    backgroundColor: theme.cyan,
-    paddingHorizontal: 40,
-    paddingVertical: 14,
-    borderRadius: 8,
-  },
-  playButtonText: {
-    fontFamily: 'ABCFavorit-Bold',
+  ctrlMainIcon: {
     fontSize: 18,
-    color: theme.bg,
-  },
-  voteButton: {
-    backgroundColor: theme.magenta,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  voteButtonText: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 16,
-    color: theme.cream,
-  },
-  queueInfo: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
-    color: theme.muted,
-    marginTop: 16,
+    color: colors.white,
   },
 });

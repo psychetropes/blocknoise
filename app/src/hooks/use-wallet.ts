@@ -13,7 +13,7 @@ import { config } from '../config';
 
 const APP_IDENTITY = {
   name: 'blocknoise',
-  uri: 'https://blocknoise.xyz',
+  uri: 'https://blocknoise.io',
   icon: 'favicon.ico',
 };
 

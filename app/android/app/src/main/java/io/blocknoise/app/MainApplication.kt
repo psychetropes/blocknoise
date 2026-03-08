@@ -1,4 +1,4 @@
-package com.app
+package io.blocknoise.app
 
 import android.app.Application
 import android.content.res.Configuration

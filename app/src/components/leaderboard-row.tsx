@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { theme } from '../theme';
-import { AudioPlayer } from './audio-player';
+import { Audio, AVPlaybackStatus } from 'expo-av';
+import { colors } from '../theme';
 import { resolveArweaveUrl } from '../utils/arweave';
 
 interface LeaderboardEntry {
@@ -24,131 +24,158 @@ interface LeaderboardRowProps {
 }
 
 export function LeaderboardRow({ entry, rank, onVote, currentWallet }: LeaderboardRowProps) {
-  const [expanded, setExpanded] = useState(false);
-
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const shortWallet = `${entry.wallet_address.slice(0, 4)}...${entry.wallet_address.slice(-4)}`;
   const displayLabel = entry.display_name ?? shortWallet;
-  const isOwnEntry = currentWallet === entry.wallet_address;
+
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+      }
+    };
+  }, []);
+
+  const handlePlay = async () => {
+    if (!soundRef.current) {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: resolveArweaveUrl(entry.arweave_url) },
+        { shouldPlay: true, isLooping: true },
+        (status: AVPlaybackStatus) => {
+          if (status.isLoaded) setIsPlaying(status.isPlaying);
+        }
+      );
+      soundRef.current = sound;
+      setIsPlaying(true);
+    } else if (isPlaying) {
+      await soundRef.current.pauseAsync();
+      setIsPlaying(false);
+    } else {
+      await soundRef.current.playAsync();
+      setIsPlaying(true);
+    }
+  };
+
+  const seed = rank * 2.3;
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.row}
-        onPress={() => setExpanded(!expanded)}
-      >
-        <Text style={styles.rank}>#{rank}</Text>
-        <View style={styles.info}>
-          <View style={styles.nameRow}>
-            <Text style={styles.wallet}>{displayLabel}</Text>
-            <Text style={styles.catalogNumber}>#blocknoise#{entry.catalog_number}</Text>
-            {entry.tier === 'pro' && (
-              <Text style={styles.proBadge}>pro</Text>
-            )}
-          </View>
-          <Text style={styles.genre}>{entry.genre}</Text>
-        </View>
-        <View style={styles.scoreContainer}>
-          <Text style={styles.score}>{entry.score}</Text>
-          <Text style={styles.votes}>{entry.vote_count} votes</Text>
-        </View>
+      {/* play icon */}
+      <TouchableOpacity onPress={handlePlay} style={styles.playCol}>
+        <Text style={styles.playIcon}>{isPlaying ? '||' : '\u25B6'}</Text>
       </TouchableOpacity>
 
-      {expanded && (
-        <View style={styles.expandedContent}>
-          <AudioPlayer uri={resolveArweaveUrl(entry.arweave_url)} />
-          {!isOwnEntry && currentWallet && (
-            <TouchableOpacity style={styles.voteButton} onPress={onVote}>
-              <Text style={styles.voteText}>upvote</Text>
-            </TouchableOpacity>
-          )}
+      {/* rank */}
+      <Text style={styles.rank}>{rank}</Text>
+
+      {/* info */}
+      <View style={styles.info}>
+        <View style={styles.walletRow}>
+          <Text style={styles.wallet}>{displayLabel}</Text>
+          <Text style={styles.catalog}>#blocknoise#{entry.catalog_number}</Text>
         </View>
-      )}
+        {/* mini waveform */}
+        <View style={styles.waveRow}>
+          {Array.from({ length: 30 }, (_, i) => (
+            <View
+              key={i}
+              style={{
+                width: 2,
+                height: Math.round(1 + Math.abs(Math.sin(seed + i * 0.7) * 7)),
+                backgroundColor: 'rgba(255,255,255,0.4)',
+              }}
+            />
+          ))}
+        </View>
+        <Text style={styles.meta}>{entry.genre}</Text>
+      </View>
+
+      {/* score */}
+      <View style={styles.scoreCol}>
+        <Text style={styles.score}>{entry.score}</Text>
+        <Text style={styles.votes}>{entry.vote_count} votes</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.bg2,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: theme.muted2,
-    overflow: 'hidden',
-  },
-  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    gap: 12,
+    gap: 4,
+    paddingVertical: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.2)',
+  },
+  playCol: {
+    width: 14,
+    alignItems: 'center',
+  },
+  playIcon: {
+    fontSize: 10,
+    color: colors.black,
+    lineHeight: 14,
   },
   rank: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 16,
-    color: theme.muted,
-    width: 32,
+    fontSize: 8,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.4)',
+    width: 16,
+    textAlign: 'right',
   },
   info: {
     flex: 1,
+    minWidth: 0,
   },
-  nameRow: {
+  walletRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   wallet: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 14,
-    color: theme.cream,
+    fontSize: 8,
+    fontWeight: '700',
+    color: colors.white,
   },
-  catalogNumber: {
+  catalog: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 10,
-    color: theme.muted,
+    fontSize: 7,
+    color: 'rgba(255,255,255,0.3)',
+    letterSpacing: 0.3,
   },
-  proBadge: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 10,
-    color: theme.magenta,
-    backgroundColor: theme.bg,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  genre: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
-    color: theme.muted,
-    marginTop: 2,
-  },
-  scoreContainer: {
+  waveRow: {
+    flexDirection: 'row',
     alignItems: 'flex-end',
+    gap: 1,
+    height: 8,
+    marginTop: 1,
+  },
+  meta: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 5,
+    color: colors.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  scoreCol: {
+    alignItems: 'flex-end',
+    marginLeft: 'auto',
   },
   score: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 20,
-    color: theme.cyan,
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.white,
+    lineHeight: 10,
   },
   votes: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 10,
-    color: theme.muted,
-  },
-  expandedContent: {
-    padding: 12,
-    paddingTop: 0,
-    gap: 12,
-  },
-  voteButton: {
-    backgroundColor: theme.magenta,
-    paddingVertical: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  voteText: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 14,
-    color: theme.cream,
+    fontSize: 5,
+    color: colors.grey,
+    lineHeight: 6,
   },
 });

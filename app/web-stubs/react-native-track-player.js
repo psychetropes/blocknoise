@@ -9,6 +9,9 @@ const Event = {
   RemoteStop: 'remote-stop',
 };
 
+const Capability = {};
+const RepeatMode = { Off: 0, Track: 1, Queue: 2 };
+
 module.exports = {
   __esModule: true,
   default: {
@@ -25,9 +28,14 @@ module.exports = {
     getState: noopAsync,
     getQueue: () => Promise.resolve([]),
     getActiveTrack: () => Promise.resolve(null),
+    setRepeatMode: noopAsync,
+    updateOptions: noopAsync,
   },
   Event,
-  State: { Playing: 'playing', Paused: 'paused', None: 'none' },
+  State: { Playing: 'playing', Paused: 'paused', None: 'none', Stopped: 'stopped', Ready: 'ready', Buffering: 'buffering' },
+  Capability,
+  RepeatMode,
   usePlaybackState: () => ({ state: 'none' }),
   useActiveTrack: () => null,
+  useTrackPlayerEvents: noop,
 };

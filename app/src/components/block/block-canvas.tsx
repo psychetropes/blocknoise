@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native';
 import * as THREE from 'three';
-import { theme } from '../../theme';
+import { colors, theme } from '../../theme';
 
 interface BlockCanvasProps {
   stems: string[];
@@ -13,7 +13,7 @@ interface BlockCanvasProps {
   onStemSelect: (index: number | null) => void;
 }
 
-const STEM_COLORS = [theme.cyan, theme.magenta, '#FFD700'];
+const STEM_COLORS = [colors.white, colors.blue, 'rgba(255,255,255,0.6)'];
 const CUBE_SIZE = 2;
 
 function WireframeCube() {
@@ -24,7 +24,7 @@ function WireframeCube() {
 
   return (
     <lineSegments geometry={edges}>
-      <lineBasicMaterial color={theme.muted} opacity={0.4} transparent />
+      <lineBasicMaterial color={colors.grey} opacity={0.4} transparent />
     </lineSegments>
   );
 }
@@ -53,7 +53,7 @@ function GridFloor() {
 
   return (
     <lineSegments geometry={geometry}>
-      <lineBasicMaterial color={theme.muted2} opacity={0.3} transparent />
+      <lineBasicMaterial color={colors.dark} opacity={0.3} transparent />
     </lineSegments>
   );
 }
@@ -215,7 +215,7 @@ export function BlockCanvas({
       >
         <ambientLight intensity={0.3} />
         <pointLight position={[5, 5, 5]} intensity={0.8} />
-        <pointLight position={[-3, -3, 2]} intensity={0.4} color={theme.cyan} />
+        <pointLight position={[-3, -3, 2]} intensity={0.4} color={colors.blue} />
 
         <RotatingGroup isActive={isActive}>
           <WireframeCube />
@@ -246,8 +246,7 @@ export function BlockCanvas({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.bg2,
-    borderRadius: 12,
+    backgroundColor: colors.pureBlack,
     overflow: 'hidden',
   },
 });

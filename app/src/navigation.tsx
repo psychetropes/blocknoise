@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
-import { theme } from './theme';
+import { colors } from './theme';
 import { HomeScreen } from './screens/home';
 import { GenerateScreen } from './screens/generate';
 import { BlockMixerScreen } from './screens/block-mixer';
@@ -18,9 +18,9 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   return (
     <Text
       style={{
-        fontFamily: 'JetBrainsMono-Regular',
-        fontSize: 10,
-        color: focused ? theme.cyan : theme.muted,
+        fontSize: 18,
+        color: focused ? colors.white : 'rgba(255,255,255,0.4)',
+        marginBottom: 2,
       }}
     >
       {label}
@@ -34,18 +34,21 @@ function TabNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.bg2,
-          borderTopColor: theme.muted2,
-          borderTopWidth: 1,
-          height: 60,
+          backgroundColor: colors.black,
+          borderTopColor: colors.black,
+          borderTopWidth: 3,
+          height: 64,
           paddingBottom: 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: theme.cyan,
-        tabBarInactiveTintColor: theme.muted,
+        tabBarActiveTintColor: colors.white,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.4)',
         tabBarLabelStyle: {
           fontFamily: 'JetBrainsMono-Regular',
-          fontSize: 10,
+          fontSize: 9,
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: 2,
         },
       }}
     >
@@ -53,24 +56,24 @@ function TabNavigator() {
         name="home"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'home',
-          tabBarIcon: ({ focused }) => <TabIcon label="~" focused={focused} />,
+          tabBarLabel: 'HOME',
+          tabBarIcon: ({ focused }) => <TabIcon label={'\u25A0'} focused={focused} />,
         }}
       />
       <Tab.Screen
         name="leaderboard"
         component={LeaderboardScreen}
         options={{
-          tabBarLabel: 'board',
-          tabBarIcon: ({ focused }) => <TabIcon label="#" focused={focused} />,
+          tabBarLabel: 'BOARD',
+          tabBarIcon: ({ focused }) => <TabIcon label={'\u2630'} focused={focused} />,
         }}
       />
       <Tab.Screen
         name="radio"
         component={RadioScreen}
         options={{
-          tabBarLabel: 'radio',
-          tabBarIcon: ({ focused }) => <TabIcon label=">" focused={focused} />,
+          tabBarLabel: 'RADIO',
+          tabBarIcon: ({ focused }) => <TabIcon label={'\u25B6'} focused={focused} />,
         }}
       />
     </Tab.Navigator>
@@ -83,7 +86,7 @@ export function AppNavigator() {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: theme.bg },
+          contentStyle: { backgroundColor: colors.blue },
           animation: 'slide_from_right',
         }}
       >

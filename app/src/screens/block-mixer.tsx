@@ -1,9 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { theme } from '../theme';
+import { colors } from '../theme';
 import { useAppStore } from '../store';
 import { BlockCanvas } from '../components/block/block-canvas';
-import { AudioPlayer } from '../components/audio-player';
 import { SpatialAudioBridge } from '../components/block/spatial-audio-bridge';
 
 type SpatialPoint = [number, number, number, number]; // x, y, z, timestamp
@@ -16,13 +15,14 @@ const DEFAULT_POSITIONS: [number, number, number][] = [
 
 export function BlockMixerScreen({ navigation }: { navigation: any }) {
   const { generation } = useAppStore();
-  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes
+  const [timeRemaining, setTimeRemaining] = useState(300);
   const [isActive, setIsActive] = useState(false);
   const [positions, setPositions] = useState<[number, number, number][]>(DEFAULT_POSITIONS);
   const [activeStem, setActiveStem] = useState<number | null>(null);
   const pathsRef = useRef<SpatialPoint[][]>([[], [], []]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(0);
+  const [lockedBlocks, setLockedBlocks] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (isActive && timeRemaining > 0) {
@@ -30,7 +30,7 @@ export function BlockMixerScreen({ navigation }: { navigation: any }) {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            handleLockMix();
+            handleLockAll();
             return 0;
           }
           return prev - 1;
@@ -50,50 +50,58 @@ export function BlockMixerScreen({ navigation }: { navigation: any }) {
 
   const handleStart = () => {
     setIsActive(true);
+    setActiveStem(0);
     startTimeRef.current = Date.now();
   };
 
   const handleDrag = useCallback(
     (stemIndex: number, position: [number, number, number]) => {
-      if (!isActive) return;
-
+      if (!isActive || lockedBlocks.has(stemIndex)) return;
       setPositions((prev) => {
         const next = [...prev] as [number, number, number][];
         next[stemIndex] = position;
         return next;
       });
-
-      // record path point
       const timestamp = Date.now() - startTimeRef.current;
       pathsRef.current[stemIndex].push([...position, timestamp]);
     },
-    [isActive]
+    [isActive, lockedBlocks]
   );
 
-  const handleLockMix = useCallback(() => {
+  const handleLockBlock = useCallback(() => {
+    if (activeStem === null) return;
+    setLockedBlocks((prev) => {
+      const next = new Set(prev);
+      next.add(activeStem);
+      // auto-advance to next unlocked block
+      for (let i = 0; i < 3; i++) {
+        const candidate = (activeStem + 1 + i) % 3;
+        if (!next.has(candidate)) {
+          setActiveStem(candidate);
+          return next;
+        }
+      }
+      // all locked — navigate to mint
+      handleLockAll();
+      return next;
+    });
+  }, [activeStem]);
+
+  const handleLockAll = useCallback(() => {
     setIsActive(false);
     setActiveStem(null);
     if (timerRef.current) clearInterval(timerRef.current);
-
-    // close paths back to origin for seamless loop
     const closedPaths = pathsRef.current.map((path) => {
-      if (path.length > 0) {
-        return [...path, path[0]];
-      }
+      if (path.length > 0) return [...path, path[0]];
       return path;
     });
-
     navigation.navigate('mint', { spatialPath: closedPaths });
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>the block</Text>
-        <Text style={styles.timer}>{formatTime(timeRemaining)}</Text>
-      </View>
-
-      <View style={styles.canvasWrapper}>
+    <View style={styles.screen}>
+      {/* 3D room — the tron room canvas */}
+      <View style={styles.tronRoom}>
         <BlockCanvas
           stems={generation.stemUrls}
           positions={positions}
@@ -102,135 +110,148 @@ export function BlockMixerScreen({ navigation }: { navigation: any }) {
           activeStem={activeStem}
           onStemSelect={setActiveStem}
         />
+        {/* inner border frame */}
+        <View style={styles.roomBorder} pointerEvents="none" />
       </View>
 
-      {/* stem indicators */}
-      <View style={styles.stemRow}>
-        {generation.stemUrls.map((url, i) => (
+      {/* timer — top right overlay */}
+      <View style={styles.timerRow}>
+        <Text style={styles.timer}>{formatTime(timeRemaining)}</Text>
+      </View>
+
+      <View style={{ flex: 1 }} />
+
+      {/* block labels */}
+      <View style={styles.blockLabels}>
+        {[0, 1, 2].map((i) => (
           <TouchableOpacity
             key={i}
-            style={[
-              styles.stemIndicator,
-              activeStem === i && styles.stemIndicatorActive,
-              { borderColor: [theme.cyan, theme.magenta, '#FFD700'][i] },
-            ]}
-            onPress={() => setActiveStem(activeStem === i ? null : i)}
+            onPress={() => !lockedBlocks.has(i) && setActiveStem(i)}
           >
             <Text
               style={[
-                styles.stemLabel,
-                { color: [theme.cyan, theme.magenta, '#FFD700'][i] },
+                styles.blockLabel,
+                activeStem === i && styles.blockLabelActive,
+                lockedBlocks.has(i) && styles.blockLabelLocked,
               ]}
             >
-              stem {i + 1}
+              BLOCK{i + 1}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* mini players */}
-      <View style={styles.playersRow}>
-        {generation.stemUrls.map((url, i) => (
-          <View key={i} style={styles.miniPlayer}>
-            <AudioPlayer uri={url} label={`s${i + 1}`} />
-          </View>
-        ))}
-      </View>
+      <View style={{ height: 8 }} />
+
+      {/* action button */}
+      {!isActive ? (
+        <TouchableOpacity style={styles.btnW} onPress={handleStart}>
+          <Text style={styles.btnWText}>start mixing</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.btnLock} onPress={handleLockBlock}>
+          <Text style={styles.btnLockText}>
+            lock block {activeStem !== null ? activeStem + 1 : ''}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <View style={{ height: 28 }} />
 
       <SpatialAudioBridge
         stemUrls={generation.stemUrls}
         positions={positions}
         isPlaying={isActive}
       />
-
-      {!isActive ? (
-        <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-          <Text style={styles.buttonText}>start mixing</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.lockButton} onPress={handleLockMix}>
-          <Text style={styles.buttonText}>lock mix</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: theme.bg,
-    padding: 16,
+    backgroundColor: colors.pureBlack,
+    paddingTop: 28,
+    paddingHorizontal: 25,
+    paddingBottom: 0,
   },
-  header: {
+  tronRoom: {
+    position: 'absolute',
+    top: 25,
+    left: 25,
+    right: 25,
+    bottom: 340,
+    backgroundColor: colors.pureBlack,
+    borderWidth: 2,
+    borderColor: 'rgba(0,18,255,0.25)',
+    overflow: 'hidden',
+  },
+  roomBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(0,18,255,0.15)',
+  },
+  timerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  title: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 24,
-    color: theme.cream,
+    marginTop: -4,
   },
   timer: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 40,
-    color: theme.cyan,
-    marginTop: 4,
-  },
-  canvasWrapper: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: theme.muted2,
-    marginVertical: 8,
-  },
-  stemRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginVertical: 8,
-  },
-  stemIndicator: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    backgroundColor: theme.bg2,
-  },
-  stemIndicatorActive: {
-    backgroundColor: theme.bg,
-  },
-  stemLabel: {
-    fontFamily: 'JetBrainsMono-Regular',
     fontSize: 11,
+    fontWeight: '700',
+    color: colors.white,
   },
-  playersRow: {
+  blockLabels: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    width: '100%',
   },
-  miniPlayer: {
-    flex: 1,
+  blockLabel: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.grey,
+    letterSpacing: 1,
+    paddingVertical: 8,
   },
-  startButton: {
-    backgroundColor: theme.cyan,
-    paddingVertical: 14,
-    borderRadius: 8,
+  blockLabelActive: {
+    color: colors.white,
+  },
+  blockLabelLocked: {
+    color: colors.blue,
+  },
+  btnW: {
+    backgroundColor: colors.white,
+    paddingVertical: 20,
     alignItems: 'center',
-    marginBottom: 16,
   },
-  lockButton: {
-    backgroundColor: theme.magenta,
-    paddingVertical: 14,
-    borderRadius: 8,
+  btnWText: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.black,
+    textTransform: 'lowercase',
+    letterSpacing: 2,
+  },
+  btnLock: {
+    backgroundColor: colors.blue,
+    paddingVertical: 20,
     alignItems: 'center',
-    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: colors.dark,
   },
-  buttonText: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 16,
-    color: theme.bg,
+  btnLockText: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white,
+    textTransform: 'lowercase',
+    letterSpacing: 2,
   },
 });

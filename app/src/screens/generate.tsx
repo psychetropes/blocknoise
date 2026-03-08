@@ -1,20 +1,30 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { theme } from '../theme';
+import { colors } from '../theme';
 import { useAppStore } from '../store';
 import { AudioPlayer } from '../components/audio-player';
+import { RecessButton } from '../components/recess-button';
 import { useGenerate } from '../hooks/use-generate';
 
 export function GenerateScreen({ navigation }: { navigation: any }) {
   const { wallet, generation } = useAppStore();
   const { generate, loading, error } = useGenerate();
 
+  const shortWallet = wallet.publicKey
+    ? `${wallet.publicKey.toBase58().slice(0, 4)}...${wallet.publicKey.toBase58().slice(-4)}`
+    : '';
+
+  const isSpatial = generation.tier === 'pro';
+  const hasStemUrls = generation.stemUrls.length > 0;
+  const hasAudio = !!generation.audioUrl;
+  const showGenerate = !hasAudio && !hasStemUrls;
+
   const handleGenerate = () => {
     generate();
   };
 
   const handleContinue = () => {
-    if (generation.tier === 'pro' && generation.stemUrls.length > 0) {
+    if (isSpatial && hasStemUrls) {
       navigation.navigate('block-mixer');
     } else {
       navigation.navigate('mint');
@@ -22,112 +32,212 @@ export function GenerateScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
+      {/* header */}
+      <View style={styles.header}>
+        <Text style={styles.walletAddr}>{shortWallet}</Text>
+        <Text style={styles.lockedLabel}>LOCKED</Text>
+      </View>
+
+      <View style={{ height: 24 }} />
       <Text style={styles.title}>
-        {generation.tier} usi
+        {isSpatial ? 'SPATIAL\nCOMPOSITION' : 'STANDARD\nCOMPOSITION'}
       </Text>
-      <Text style={styles.subtitle}>
-        generating from {wallet.publicKey?.toBase58().slice(0, 8)}...
-      </Text>
+      <View style={{ height: 8 }} />
 
-      {!generation.audioUrl && generation.stemUrls.length === 0 && (
-        <TouchableOpacity
-          style={styles.generateButton}
-          onPress={handleGenerate}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={theme.bg} />
-          ) : (
-            <Text style={styles.generateButtonText}>generate</Text>
-          )}
-        </TouchableOpacity>
-      )}
-
-      {error && <Text style={styles.error}>{error}</Text>}
-
-      {generation.audioUrl && (
-        <View style={styles.playerContainer}>
-          <AudioPlayer uri={generation.audioUrl} />
-          <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-            <Text style={styles.continueButtonText}>continue to mint</Text>
+      {showGenerate && (
+        <>
+          <Text style={styles.subtitle}>
+            {loading ? 'generating...' : 'ready to generate'}
+          </Text>
+          <View style={{ height: 24 }} />
+          <TouchableOpacity
+            style={[styles.btnW, loading && { opacity: 0.5 }]}
+            onPress={handleGenerate}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.black} />
+            ) : (
+              <Text style={styles.btnWText}>generate</Text>
+            )}
           </TouchableOpacity>
-        </View>
+        </>
       )}
 
-      {generation.stemUrls.length > 0 && (
-        <View style={styles.playerContainer}>
-          <Text style={styles.stemsLabel}>3 stems generated</Text>
-          {generation.stemUrls.map((url, i) => (
-            <AudioPlayer key={i} uri={url} label={`stem ${i + 1}`} />
-          ))}
-          <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-            <Text style={styles.continueButtonText}>open block mixer</Text>
-          </TouchableOpacity>
-        </View>
+      {error && (
+        <>
+          <View style={{ height: 16 }} />
+          <Text style={styles.error}>{error}</Text>
+        </>
       )}
+
+      {/* spatial: 3-column stem layout */}
+      {hasStemUrls && (
+        <>
+          <Text style={styles.subtitle}>3 stems generated</Text>
+          <View style={{ height: 16 }} />
+          <View style={styles.stemColumns}>
+            {generation.stemUrls.map((url, i) => (
+              <View key={i} style={styles.stemCol}>
+                <RecessButton style={{ width: '100%', aspectRatio: 1 }}>
+                  <View style={styles.playCenter}>
+                    <Text style={styles.playIcon}>{'\u25B6'}</Text>
+                  </View>
+                </RecessButton>
+                <Text style={styles.blockLabel}>BLOCK{i + 1}</Text>
+                {/* vertical waveform placeholder */}
+                <View style={styles.vertWaveform}>
+                  {Array.from({ length: 40 }, (_, j) => (
+                    <View
+                      key={j}
+                      style={[
+                        styles.vBar,
+                        {
+                          width: `${15 + Math.abs(Math.sin(i * 3 + j * 0.5)) * 70}%`,
+                          backgroundColor: j / 40 < 0.5
+                            ? colors.white
+                            : 'rgba(255,255,255,0.25)',
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.stemTime}>0:30</Text>
+              </View>
+            ))}
+          </View>
+          <View style={{ height: 24 }} />
+          <TouchableOpacity style={styles.btnW} onPress={handleContinue}>
+            <Text style={styles.btnWText}>open block mixer</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {/* standard: single player */}
+      {hasAudio && !hasStemUrls && (
+        <>
+          <View style={{ height: 24 }} />
+          <AudioPlayer uri={generation.audioUrl!} />
+          <View style={{ height: 24 }} />
+          <TouchableOpacity style={styles.btnW} onPress={handleContinue}>
+            <Text style={styles.btnWText}>continue to mint</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      <View style={{ height: 24 }} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: theme.bg,
+    backgroundColor: colors.blue,
+    paddingTop: 28,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    marginTop: -4,
+  },
+  walletAddr: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  lockedLabel: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 3,
   },
   title: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 28,
-    color: theme.cream,
-    marginBottom: 8,
+    fontFamily: 'ABCSolar-Bold',
+    fontSize: 36,
+    color: colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    lineHeight: 38,
+    textAlign: 'center',
   },
   subtitle: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 13,
-    color: theme.muted,
-    marginBottom: 32,
-  },
-  generateButton: {
-    backgroundColor: theme.cyan,
-    paddingHorizontal: 48,
-    paddingVertical: 16,
-    borderRadius: 8,
-  },
-  generateButtonText: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 18,
-    color: theme.bg,
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.white,
+    opacity: 0.6,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   error: {
     fontFamily: 'JetBrainsMono-Regular',
     fontSize: 13,
-    color: theme.magenta,
-    marginTop: 16,
+    color: colors.white,
+    textAlign: 'center',
   },
-  playerContainer: {
-    width: '100%',
-    gap: 16,
+  stemColumns: {
+    flexDirection: 'row',
+    gap: 12,
+    flex: 1,
+  },
+  stemCol: {
+    flex: 1,
+    gap: 8,
     alignItems: 'center',
   },
-  stemsLabel: {
+  playCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playIcon: {
+    fontSize: 18,
+    color: colors.white,
+  },
+  blockLabel: {
+    fontFamily: 'ABCSolar-Bold',
+    fontSize: 18,
+    color: colors.white,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    letterSpacing: 0,
+  },
+  vertWaveform: {
+    flex: 1,
+    width: '100%',
+    gap: 1,
+    alignItems: 'center',
+  },
+  vBar: {
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  stemTime: {
     fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 14,
-    color: theme.cyan,
-    marginBottom: 8,
+    fontSize: 9,
+    color: colors.white,
+    textAlign: 'center',
   },
-  continueButton: {
-    backgroundColor: theme.magenta,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginTop: 16,
+  btnW: {
+    backgroundColor: colors.white,
+    paddingVertical: 20,
+    alignItems: 'center',
   },
-  continueButtonText: {
-    fontFamily: 'ABCFavorit-Bold',
-    fontSize: 16,
-    color: theme.cream,
+  btnWText: {
+    fontFamily: 'JetBrainsMono-Regular',
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.black,
+    textTransform: 'lowercase',
+    letterSpacing: 2,
   },
 });
