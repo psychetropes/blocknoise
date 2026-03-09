@@ -3,8 +3,13 @@ node_modules/
 
 # env files
 .env
+.env.*
 .env.local
 .env.production
+app/.env
+app/.env.*
+server/.env
+server/.env.*
 
 # expo
 .expo/

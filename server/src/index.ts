@@ -20,7 +20,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',')
   : undefined; // undefined = allow all (dev mode)
 app.use(cors(allowedOrigins ? { origin: allowedOrigins } : undefined));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(rateLimiter);
 
 app.use('/generate', generateLimiter, generateRouter);

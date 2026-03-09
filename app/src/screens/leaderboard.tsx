@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 import { LeaderboardRow } from '../components/leaderboard-row';
 import { useAppStore } from '../store';
+import { config } from '../config';
+import { DEMO_LEADERBOARD } from '../demo';
+import { ScreenFrame } from '../components/screen-frame';
 
 interface LeaderboardEntry {
   id: string;
@@ -36,11 +39,16 @@ export function LeaderboardScreen() {
 
   const fetchLeaderboard = useCallback(async () => {
     try {
+      if (config.demoMode) {
+        setEntries([...DEMO_LEADERBOARD]);
+        return;
+      }
+
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/leaderboard`);
       const data = await res.json();
       setEntries(data);
-    } catch {
+    } catch (_error) {
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -49,7 +57,7 @@ export function LeaderboardScreen() {
 
   useEffect(() => {
     fetchLeaderboard();
-    if (!supabase) return;
+    if (!supabase || config.demoMode) return;
     const channel = supabase
       .channel('leaderboard-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => fetchLeaderboard())
@@ -59,13 +67,7 @@ export function LeaderboardScreen() {
   }, [fetchLeaderboard]);
 
   return (
-    <View style={styles.screen}>
-      {/* header */}
-      <View style={styles.header}>
-        <Text style={styles.walletAddr}>{shortWallet}</Text>
-        <Text style={styles.lockedLabel}>LOCKED</Text>
-      </View>
-
+    <ScreenFrame headerLeft={shortWallet} headerRight="LOCKED">
       <View style={{ height: 16 }} />
       <Text style={styles.title}>LEADERBOARD</Text>
 
@@ -93,39 +95,13 @@ export function LeaderboardScreen() {
           </Text>
         }
       />
-    </View>
+    </ScreenFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.blue,
-    paddingTop: 28,
-    paddingHorizontal: 28,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: -4,
-  },
-  walletAddr: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  lockedLabel: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.black,
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-  },
   title: {
-    fontFamily: 'ABCSolar-Bold',
+    fontFamily: typography.display,
     fontSize: 36,
     color: colors.white,
     textTransform: 'uppercase',
@@ -139,7 +115,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -4,
   },
   empty: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 14,
     color: colors.grey,
     textAlign: 'center',

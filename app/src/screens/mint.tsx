@@ -1,16 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  PanResponder,
+  Animated,
+} from 'react-native';
 import { createClient } from '@supabase/supabase-js';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 import { useAppStore } from '../store';
 import { RecessButton } from '../components/recess-button';
 import { useMint } from '../hooks/use-mint';
-import { fetchPrices, calculatePaymentAmount } from '../services/pricing';
+import { config } from '../config';
+import { DEMO_LEADERBOARD } from '../demo';
+import { ScreenFrame } from '../components/screen-frame';
 
-const supabase = createClient(
-  process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
-);
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 const GENRES = [
   'ambient', 'drone', 'industrial', 'noise', 'glitch',
@@ -19,60 +31,57 @@ const GENRES = [
   'generative', 'modular', 'microsound', 'acousmatic', 'dark techno', 'ritual',
 ];
 
-interface PriceData {
-  sol: number;
-  usdc: number;
-  skr: number;
-  solUsd: number;
-  skrUsd: number;
-}
-
 export function MintScreen({ navigation, route }: { navigation: any; route: any }) {
   const { wallet, generation, setGeneration } = useAppStore();
   const spatialPath = route.params?.spatialPath ?? null;
-  const [prices, setPrices] = useState<PriceData | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<'usdc' | 'sol' | 'skr'>('usdc');
   const { mint, minting, error } = useMint();
 
   const [nextCatalog, setNextCatalog] = useState<number | null>(null);
+  const [selectedGenreIndex, setSelectedGenreIndex] = useState(
+    Math.max(0, generation.genre ? GENRES.indexOf(generation.genre) : 0)
+  );
+  const dragOffset = useRef(new Animated.Value(0)).current;
   const shortWallet = wallet.publicKey
     ? `${wallet.publicKey.toBase58().slice(0, 4)}...${wallet.publicKey.toBase58().slice(-4)}`
     : '';
   const fullWallet = wallet.publicKey?.toBase58() ?? '';
 
   useEffect(() => {
-    loadPrices();
+    if (generation.genre && GENRES.includes(generation.genre)) {
+      setSelectedGenreIndex(GENRES.indexOf(generation.genre));
+    }
+  }, [generation.genre]);
+
+  useEffect(() => {
     fetchNextCatalog();
   }, []);
 
-  const loadPrices = async () => {
-    try {
-      const data = await fetchPrices();
-      setPrices(data);
-    } catch {}
-  };
+  useEffect(() => {
+    const nextGenre = GENRES[selectedGenreIndex];
+    if (nextGenre && generation.genre !== nextGenre) {
+      setGeneration({ genre: nextGenre });
+    }
+  }, [generation.genre, selectedGenreIndex, setGeneration]);
 
   const fetchNextCatalog = async () => {
+    if (config.demoMode || !supabase) {
+      setNextCatalog(DEMO_LEADERBOARD.length + 1);
+      return;
+    }
+
     try {
       const { count } = await supabase
         .from('usis')
         .select('*', { count: 'exact', head: true });
       if (count !== null) setNextCatalog(count + 1);
-    } catch {}
-  };
-
-  const getPaymentAmount = (method: 'usdc' | 'sol' | 'skr') => {
-    if (!prices) return '...';
-    return calculatePaymentAmount(
-      generation.tier === 'pro' ? 20 : 10,
-      method,
-      prices
-    ).display;
+    } catch (_error) {
+      setNextCatalog(DEMO_LEADERBOARD.length + 1);
+    }
   };
 
   const handleMint = async () => {
     if (!wallet.publicKey || !generation.genre) return;
-    const result = await mint(selectedPayment, spatialPath);
+    const result = await mint(generation.paymentMethod ?? 'usdc', spatialPath);
     if (result) {
       const label = result.displayName
         ? `#blocknoise#${result.catalogNumber} — ${result.displayName}`
@@ -85,38 +94,93 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
     }
   };
 
-  return (
-    <View style={styles.screen}>
-      {/* header */}
-      <View style={styles.header}>
-        <Text style={styles.walletAddr}>{shortWallet}</Text>
-        <Text style={styles.lockedLabel}>LOCKED</Text>
-      </View>
+  const wrapIndex = (value: number) => {
+    const length = GENRES.length;
+    return ((value % length) + length) % length;
+  };
 
+  const visibleGenres = useMemo(
+    () =>
+      Array.from({ length: 5 }, (_, visibleIndex) => {
+        const offset = visibleIndex - 2;
+        const genreIndex = wrapIndex(selectedGenreIndex + offset);
+        return {
+          genre: GENRES[genreIndex],
+          offset,
+        };
+      }),
+    [selectedGenreIndex]
+  );
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderMove: (_, gestureState) => {
+          const clamped = Math.max(-120, Math.min(120, gestureState.dy));
+          dragOffset.setValue(clamped);
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          const step = Math.round(gestureState.dy / 34);
+          setSelectedGenreIndex((prev) => wrapIndex(prev - step));
+          Animated.spring(dragOffset, {
+            toValue: 0,
+            useNativeDriver: true,
+            speed: 18,
+            bounciness: 4,
+          }).start();
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(dragOffset, {
+            toValue: 0,
+            useNativeDriver: true,
+            speed: 18,
+            bounciness: 4,
+          }).start();
+        },
+      }),
+    [dragOffset]
+  );
+
+  return (
+    <ScreenFrame headerLeft={shortWallet} headerRight="LOCKED">
       <View style={{ height: 24 }} />
       <Text style={styles.title}>{'CATALOG YOUR\nCOMPOSITION'}</Text>
       <View style={{ height: 8 }} />
       <Text style={styles.subtitle}>choose a genre</Text>
       <View style={{ height: 16 }} />
 
-      {/* genre selector — recess box with scrollable genres */}
-      <RecessButton style={{ aspectRatio: 1 }}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ gap: 18, paddingVertical: 12 }}
-        >
-          {GENRES.map((genre) => (
-            <TouchableOpacity key={genre} onPress={() => setGeneration({ genre })}>
-              <Text style={[
-                styles.genreItem,
-                generation.genre === genre && styles.genreItemSelected,
-              ]}>
-                {genre.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      <RecessButton style={styles.genreBox} interactive={false}>
+        <View style={styles.genreOverlay}>
+          <View style={styles.genreViewport} {...panResponder.panHandlers}>
+            <View style={styles.genreCenterBand} />
+            {visibleGenres.map(({ genre, offset }) => {
+              const distance = Math.abs(offset);
+              const isCentered = offset === 0;
+
+              return (
+                <Animated.View
+                  key={`${genre}-${offset}`}
+                  style={[
+                    styles.genreRow,
+                    {
+                      transform: [
+                        { translateY: offset * 34 },
+                        { translateY: dragOffset },
+                      ],
+                      opacity: isCentered ? 1 : Math.max(0.18, 0.7 - distance * 0.14),
+                    },
+                  ]}
+                >
+                  <Text style={[styles.genreItem, isCentered && styles.genreItemSelected]}>
+                    {genre.toUpperCase()}
+                  </Text>
+                </Animated.View>
+              );
+            })}
+          </View>
+        </View>
       </RecessButton>
 
       <View style={{ height: 24 }} />
@@ -131,24 +195,9 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
 
       <View style={{ height: 24 }} />
 
-      {/* payment method selector */}
-      <View style={styles.paymentRow}>
-        {(['usdc', 'sol', 'skr'] as const).map((method) => (
-          <RecessButton
-            key={method}
-            selected={selectedPayment === method}
-            onPress={() => setSelectedPayment(method)}
-            style={{ flex: 1 }}
-          >
-            <View style={styles.paymentCard}>
-              <Text style={styles.paymentLabel}>{method.toUpperCase()}</Text>
-              <Text style={styles.paymentAmount}>{getPaymentAmount(method)}</Text>
-              {method === 'skr' && (
-                <Text style={styles.paymentNote}>50% off</Text>
-              )}
-            </View>
-          </RecessButton>
-        ))}
+      <View style={styles.paymentMeta}>
+        <Text style={styles.paymentMetaLabel}>PAID VIA {generation.paymentMethod?.toUpperCase() ?? '—'}</Text>
+        <Text style={styles.paymentMetaValue}>{generation.paymentSignature ? 'payment confirmed' : 'payment missing'}</Text>
       </View>
 
       <View style={{ flex: 1 }} />
@@ -157,9 +206,9 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
 
       {/* mint button */}
       <TouchableOpacity
-        style={[styles.btnW, (!generation.genre || minting) && { opacity: 0.5 }]}
+        style={[styles.btnW, (!generation.genre || !generation.paymentSignature || minting) && { opacity: 0.5 }]}
         onPress={handleMint}
-        disabled={!generation.genre || minting}
+        disabled={!generation.genre || !generation.paymentSignature || minting}
       >
         {minting ? (
           <ActivityIndicator color={colors.black} />
@@ -168,39 +217,13 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
         )}
       </TouchableOpacity>
       <View style={{ height: 28 }} />
-    </View>
+    </ScreenFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.blue,
-    paddingTop: 28,
-    paddingHorizontal: 28,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: -4,
-  },
-  walletAddr: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  lockedLabel: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.black,
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-  },
   title: {
-    fontFamily: 'ABCSolar-Bold',
+    fontFamily: typography.display,
     fontSize: 34,
     color: colors.white,
     textTransform: 'uppercase',
@@ -209,66 +232,97 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 12,
     color: colors.grey,
     textAlign: 'center',
   },
   genreItem: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 9,
+    fontFamily: typography.mono,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: '700',
     color: colors.grey,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 2,
+    textAlign: 'center',
   },
   genreItemSelected: {
     color: colors.white,
   },
+  genreBox: {
+    aspectRatio: 1,
+  },
+  genreOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 3,
+    elevation: 3,
+  },
+  genreViewport: {
+    flex: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  genreCenterBand: {
+    position: 'absolute',
+    left: '10%',
+    right: '10%',
+    top: '48%',
+    height: '12%',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  genreRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '54%',
+    marginTop: -9,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fullWallet: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 8,
     color: 'rgba(255,255,255,0.5)',
   },
   catalogPreview: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 7,
     color: 'rgba(255,255,255,0.3)',
     marginTop: 2,
   },
-  paymentRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  paymentCard: {
+  paymentMeta: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 8,
   },
-  paymentLabel: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
+  paymentMetaLabel: {
+    fontFamily: typography.mono,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.white,
     textTransform: 'uppercase',
     letterSpacing: 2,
     opacity: 0.5,
   },
-  paymentAmount: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 22,
-    fontWeight: '700',
+  paymentMetaValue: {
+    fontFamily: typography.mono,
+    fontSize: 9,
     color: colors.white,
-  },
-  paymentNote: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 8,
-    color: colors.white,
-    opacity: 0.4,
+    opacity: 0.7,
   },
   error: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 13,
     color: colors.white,
     marginBottom: 16,
@@ -280,7 +334,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnWText: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 13,
     fontWeight: '700',
     color: colors.black,

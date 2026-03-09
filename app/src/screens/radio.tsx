@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import TrackPlayer, {
   State,
   usePlaybackState,
@@ -8,11 +8,15 @@ import TrackPlayer, {
   Capability,
   RepeatMode,
 } from 'react-native-track-player';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 import { useAppStore } from '../store';
 import { RecessButton } from '../components/recess-button';
 import { SpatialAudioBridge } from '../components/block/spatial-audio-bridge';
 import { resolveArweaveUrl, resolveArweaveUrls } from '../utils/arweave';
+import { config } from '../config';
+import { DEMO_RADIO } from '../demo';
+import { BrandTitle } from '../components/brand-title';
+import { ScreenFrame } from '../components/screen-frame';
 
 interface RadioTrack {
   wallet_address: string;
@@ -121,6 +125,22 @@ export function RadioScreen() {
 
   const fetchPlaylist = async () => {
     try {
+      if (config.demoMode) {
+        const data = [...DEMO_RADIO];
+        setPlaylist(data);
+        await TrackPlayer.reset();
+        await TrackPlayer.add(
+          data.map((track) => ({
+            id: track.id,
+            url: resolveArweaveUrl(track.arweave_url),
+            title: track.display_name ?? `${track.wallet_address.slice(0, 4)}...${track.wallet_address.slice(-4)}`,
+            artist: `blocknoise — ${track.genre}`,
+            artwork: 'https://blocknoise.io/cover.png',
+          }))
+        );
+        return;
+      }
+
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       const res = await fetch(`${apiUrl}/radio`);
       const data: RadioTrack[] = await res.json();
@@ -136,7 +156,7 @@ export function RadioScreen() {
         }));
         await TrackPlayer.add(tracks);
       }
-    } catch {}
+    } catch (_error) {}
   };
 
   const handlePlayPause = async () => {
@@ -171,20 +191,10 @@ export function RadioScreen() {
     : '';
 
   return (
-    <View style={styles.screen}>
-      {/* header */}
-      <View style={styles.header}>
-        <Text style={styles.walletAddr}>{shortWallet}</Text>
-        <Text style={styles.lockedLabel}>LOCKED</Text>
-      </View>
-
+    <ScreenFrame headerLeft={shortWallet} headerRight="LOCKED">
       <View style={{ height: 24 }} />
 
-      {/* BLOCK NOISE title */}
-      <View style={{ alignItems: 'center' }}>
-        <Text style={styles.titleLine}>BLOCK</Text>
-        <Text style={styles.titleLine}>NOISE</Text>
-      </View>
+      <BrandTitle />
       <Text style={styles.radioSubtitle}>seeker radio</Text>
 
       <View style={{ height: 24 }} />
@@ -222,6 +232,7 @@ export function RadioScreen() {
       <View style={styles.controls}>
         <RecessButton
           onPress={handlePrev}
+          sticky={false}
           style={{ width: 48, height: 48 }}
         >
           <View style={styles.ctrlInner}>
@@ -231,6 +242,8 @@ export function RadioScreen() {
 
         <RecessButton
           onPress={handlePlayPause}
+          selected={isPlaying}
+          sticky={false}
           style={{ width: 60, height: 60 }}
         >
           <View style={styles.ctrlInner}>
@@ -242,6 +255,7 @@ export function RadioScreen() {
 
         <RecessButton
           onPress={handleNext}
+          sticky={false}
           style={{ width: 48, height: 48 }}
         >
           <View style={styles.ctrlInner}>
@@ -260,48 +274,13 @@ export function RadioScreen() {
           isPlaying={spatialMode}
         />
       )}
-    </View>
+    </ScreenFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.blue,
-    paddingTop: 28,
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: -4,
-  },
-  walletAddr: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  lockedLabel: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.black,
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-  },
-  titleLine: {
-    fontFamily: 'ABCSolar-Bold',
-    fontSize: 68,
-    color: colors.white,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    lineHeight: 68,
-  },
   radioSubtitle: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 10,
     color: 'rgba(255,255,255,0.5)',
     textAlign: 'center',
@@ -328,18 +307,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   trackWallet: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 9,
     fontWeight: '700',
     color: colors.white,
   },
   trackCatalog: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 7,
     color: 'rgba(255,255,255,0.35)',
   },
   trackGenre: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 8,
     color: colors.grey,
     textTransform: 'uppercase',

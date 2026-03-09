@@ -1,68 +1,85 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 import { useAppStore } from '../store';
 import { WalletConnect } from '../components/wallet-connect';
 import { RecessButton } from '../components/recess-button';
+import { BrandTitle } from '../components/brand-title';
+import { ScreenFrame } from '../components/screen-frame';
+import { fetchPrices, calculatePaymentAmount, type PriceData } from '../services/pricing';
+import { DEMO_PRICES } from '../demo';
 
 export function HomeScreen({ navigation }: { navigation: any }) {
   const { wallet, setGeneration } = useAppStore();
+  const [prices, setPrices] = useState<PriceData>(DEMO_PRICES);
+
+  useEffect(() => {
+    fetchPrices().then(setPrices).catch(() => setPrices(DEMO_PRICES));
+  }, []);
 
   const handleGenerate = (tier: 'standard' | 'pro') => {
-    setGeneration({ tier });
-    navigation.navigate('generate');
+    setGeneration({
+      tier,
+      audioUrl: null,
+      stemUrls: [],
+      stemWaveforms: [],
+      genre: null,
+      paymentMethod: null,
+      paymentSignature: null,
+    });
+    setTimeout(() => {
+      navigation.navigate('payment');
+    }, 110);
   };
 
   const shortWallet = wallet.publicKey
     ? `${wallet.publicKey.toBase58().slice(0, 4)}...${wallet.publicKey.toBase58().slice(-4)}`
     : '';
 
+  const getDisplayAmount = (usdPrice: number, method: 'usdc' | 'sol' | 'skr') =>
+    calculatePaymentAmount(usdPrice, method, prices).display.replace(/ (usdc|sol|skr)$/i, '');
+
   // disconnected — show BLOCK NOISE title + connect button
   if (!wallet.connected) {
     return (
-      <View style={styles.screen}>
+      <ScreenFrame>
         <View style={{ flex: 1 }} />
-        <View style={styles.titleBlock}>
-          <Text style={styles.titleLine}>BLOCK</Text>
-          <Text style={styles.titleLine}>NOISE</Text>
-        </View>
+        <BrandTitle />
         <View style={{ flex: 1 }} />
         <WalletConnect />
-        <View style={{ height: 28 }} />
-      </View>
+      </ScreenFrame>
     );
   }
 
   // connected — show wallet + tier cards + mint button
   return (
-    <View style={styles.screen}>
-      {/* header: wallet + disconnect */}
-      <View style={styles.header}>
-        <Text style={styles.walletAddr}>{shortWallet}</Text>
-        <WalletConnect />
-      </View>
-
-      {/* tier cards */}
+    <ScreenFrame
+      headerLeft={shortWallet}
+      headerRight={<WalletConnect />}
+    >
       <View style={styles.tierContainer}>
         <RecessButton
           onPress={() => handleGenerate('standard')}
           style={{ flex: 1 }}
         >
           <Text style={styles.tierTitle}>STANDARD COMPOSITION</Text>
-          <Text style={styles.tierDesc}>1 x 30s looping track</Text>
+          <Text style={styles.tierDesc}>{'1 x 30s looping track\n'}</Text>
           <View style={{ flex: 1 }} />
           <View style={styles.priceRow}>
             <Text style={styles.priceItem}>
-              <Text style={styles.priceCurrency}>USDC </Text>
-              <Text style={styles.priceValue}>10</Text>
+              <Text style={styles.priceCurrency}>USDC</Text>
+              {'\n'}
+              <Text style={styles.priceValue}>{getDisplayAmount(10, 'usdc')}</Text>
             </Text>
             <Text style={styles.priceItem}>
-              <Text style={styles.priceCurrency}>SOL </Text>
-              <Text style={styles.priceValue}>0.07</Text>
+              <Text style={styles.priceCurrency}>SOL</Text>
+              {'\n'}
+              <Text style={styles.priceValue}>{getDisplayAmount(10, 'sol')}</Text>
             </Text>
             <Text style={styles.priceItem}>
-              <Text style={styles.priceCurrency}>SKR </Text>
-              <Text style={styles.priceValue}>5</Text>
+              <Text style={styles.priceCurrency}>SKR</Text>
+              {'\n'}
+              <Text style={styles.priceValue}>{getDisplayAmount(10, 'skr')}</Text>
             </Text>
           </View>
         </RecessButton>
@@ -72,20 +89,23 @@ export function HomeScreen({ navigation }: { navigation: any }) {
           style={{ flex: 1 }}
         >
           <Text style={styles.tierTitle}>SPATIAL COMPOSITION</Text>
-          <Text style={styles.tierDesc}>3 x 30s stems + 3D mixer</Text>
+          <Text style={styles.tierDesc}>{'3 x 30s stems + 3D mixer\n'}</Text>
           <View style={{ flex: 1 }} />
           <View style={styles.priceRow}>
             <Text style={styles.priceItem}>
-              <Text style={styles.priceCurrency}>USDC </Text>
-              <Text style={styles.priceValue}>20</Text>
+              <Text style={styles.priceCurrency}>USDC</Text>
+              {'\n'}
+              <Text style={styles.priceValue}>{getDisplayAmount(20, 'usdc')}</Text>
             </Text>
             <Text style={styles.priceItem}>
-              <Text style={styles.priceCurrency}>SOL </Text>
-              <Text style={styles.priceValue}>0.14</Text>
+              <Text style={styles.priceCurrency}>SOL</Text>
+              {'\n'}
+              <Text style={styles.priceValue}>{getDisplayAmount(20, 'sol')}</Text>
             </Text>
             <Text style={styles.priceItem}>
-              <Text style={styles.priceCurrency}>SKR </Text>
-              <Text style={styles.priceValue}>10</Text>
+              <Text style={styles.priceCurrency}>SKR</Text>
+              {'\n'}
+              <Text style={styles.priceValue}>{getDisplayAmount(20, 'skr')}</Text>
             </Text>
           </View>
         </RecessButton>
@@ -93,50 +113,20 @@ export function HomeScreen({ navigation }: { navigation: any }) {
 
       {/* mint button */}
       <TouchableOpacity style={styles.btnW} onPress={() => handleGenerate('standard')}>
-        <Text style={styles.btnWText}>mint composition</Text>
+        <Text style={styles.btnWText}>choose composition</Text>
       </TouchableOpacity>
-    </View>
+    </ScreenFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.blue,
-    paddingTop: 52,
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-  },
-  titleBlock: {
-    alignItems: 'center',
-  },
-  titleLine: {
-    fontFamily: 'ABCSolar-Bold',
-    fontSize: 68,
-    color: colors.white,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    lineHeight: 68,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: -4,
-  },
-  walletAddr: {
-    fontFamily: 'JetBrainsMono-Regular',
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.white,
-  },
   tierContainer: {
     flex: 1,
     gap: 28,
     marginTop: 28,
   },
   tierTitle: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 11,
     fontWeight: '700',
     color: colors.white,
@@ -144,26 +134,27 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   tierDesc: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 9,
     color: colors.grey,
     letterSpacing: 1,
     marginTop: 6,
   },
   priceRow: {
-    flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   priceItem: {
     fontSize: 10,
     color: colors.white,
+    textAlign: 'left',
+    lineHeight: 15,
   },
   priceCurrency: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     opacity: 0.5,
   },
   priceValue: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontWeight: '700',
   },
   btnW: {
@@ -173,7 +164,7 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   btnWText: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 13,
     fontWeight: '700',
     color: colors.black,

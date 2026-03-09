@@ -9,6 +9,9 @@ const router = Router();
 
 // treasury wallet — must match client-side EXPO_PUBLIC_TREASURY_ADDRESS
 const TREASURY = process.env.TREASURY_ADDRESS;
+const NETWORK = process.env.SOLANA_NETWORK ?? 'devnet';
+const ALLOW_DEVNET_UPLOAD_FALLBACK =
+  process.env.ALLOW_DEVNET_UPLOAD_FALLBACK !== 'false';
 
 interface UploadBody {
   walletAddress: string;
@@ -59,6 +62,15 @@ async function uploadToArweave(
   });
 
   return receipt.id;
+}
+
+function buildFallbackMediaUrl(
+  catalogNumber: number,
+  kind: 'audio' | 'metadata',
+  index?: number
+) {
+  const suffix = index === undefined ? '' : `-${index + 1}`;
+  return `fallback://${kind}/blocknoise-${catalogNumber}${suffix}`;
 }
 
 /**
@@ -185,41 +197,63 @@ router.post('/', async (req: Request, res: Response) => {
 
     // upload audio stems to arweave via irys
     let stemArweaveTxIds: string[] = [];
-    let arweaveTxId: string;
+    let arweaveTxId = '';
+    let metadataUrl = '';
+    let arweaveUrl = '';
+    let uploadFallbackUsed = false;
 
-    if (tier === 'pro' && cached.data.length > 1) {
-      // pro: upload all stems in parallel
-      const uploadPromises = cached.data.map((stemData, i) => {
-        const stemBuffer = Buffer.from(stemData, 'base64');
-        return uploadToArweave(stemBuffer, 'audio/mpeg', [
+    try {
+      if (tier === 'pro' && cached.data.length > 1) {
+        // pro: upload all stems in parallel
+        const uploadPromises = cached.data.map((stemData, i) => {
+          const stemBuffer = Buffer.from(stemData, 'base64');
+          return uploadToArweave(stemBuffer, 'audio/mpeg', [
+            { name: 'Wallet', value: walletAddress },
+            { name: 'Tier', value: tier },
+            { name: 'Catalog', value: String(catalogNumber) },
+            { name: 'Stem-Index', value: String(i) },
+          ]);
+        });
+        stemArweaveTxIds = await Promise.all(uploadPromises);
+        arweaveTxId = stemArweaveTxIds[0];
+      } else {
+        // standard: upload single track
+        const audioBuffer = Buffer.from(cached.data[0], 'base64');
+        arweaveTxId = await uploadToArweave(audioBuffer, 'audio/mpeg', [
           { name: 'Wallet', value: walletAddress },
           { name: 'Tier', value: tier },
           { name: 'Catalog', value: String(catalogNumber) },
-          { name: 'Stem-Index', value: String(i) },
         ]);
-      });
-      stemArweaveTxIds = await Promise.all(uploadPromises);
-      arweaveTxId = stemArweaveTxIds[0];
-    } else {
-      // standard: upload single track
-      const audioBuffer = Buffer.from(cached.data[0], 'base64');
-      arweaveTxId = await uploadToArweave(audioBuffer, 'audio/mpeg', [
-        { name: 'Wallet', value: walletAddress },
-        { name: 'Tier', value: tier },
-        { name: 'Catalog', value: String(catalogNumber) },
-      ]);
+      }
+    } catch (uploadError) {
+      if (!(NETWORK !== 'mainnet' && ALLOW_DEVNET_UPLOAD_FALLBACK)) {
+        throw uploadError;
+      }
+
+      uploadFallbackUsed = true;
+      stemArweaveTxIds =
+        tier === 'pro' && cached.data.length > 1
+          ? cached.data.map((_, i) => buildFallbackMediaUrl(catalogNumber, 'audio', i))
+          : [];
+      arweaveTxId =
+        tier === 'pro' && cached.data.length > 1
+          ? stemArweaveTxIds[0]
+          : buildFallbackMediaUrl(catalogNumber, 'audio');
+      console.warn('upload fallback used:', uploadError);
     }
 
     // build nft metadata — catalog number is permanent on arweave
     const walletShort = `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`;
     const displayLabel = snsName ?? walletShort;
-    const stemUrls = stemArweaveTxIds.map((id) => `ar://${id}`);
+    const stemUrls = stemArweaveTxIds.map((id) =>
+      id.startsWith('fallback://') ? id : `ar://${id}`
+    );
 
     const metadata = {
       name: `#blocknoise#${catalogNumber} — ${displayLabel}`,
       description: `unique sound identifier #blocknoise#${catalogNumber} generated from solana wallet ${walletAddress}. part of the blocknoise research project — a psyché tropes imprint.`,
       image: 'https://blocknoise.io/cover.png',
-      animation_url: `ar://${arweaveTxId}`,
+      animation_url: arweaveTxId.startsWith('fallback://') ? arweaveTxId : `ar://${arweaveTxId}`,
       external_url: 'https://blocknoise.io',
       attributes: [
         { trait_type: 'catalog', value: String(catalogNumber) },
@@ -233,26 +267,37 @@ router.post('/', async (req: Request, res: Response) => {
         files:
           stemArweaveTxIds.length > 0
             ? stemArweaveTxIds.map((id) => ({
-                uri: `ar://${id}`,
+                uri: id.startsWith('fallback://') ? id : `ar://${id}`,
                 type: 'audio/mpeg',
               }))
-            : [{ uri: `ar://${arweaveTxId}`, type: 'audio/mpeg' }],
+            : [{
+                uri: arweaveTxId.startsWith('fallback://')
+                  ? arweaveTxId
+                  : `ar://${arweaveTxId}`,
+                type: 'audio/mpeg',
+              }],
         category: 'audio',
         spatial_path: spatialPath ?? null,
         stem_count: tier === 'pro' ? cached.data.length : 1,
+        upload_fallback_used: uploadFallbackUsed,
       },
     };
 
-    // upload metadata json to arweave
-    const metadataBuffer = Buffer.from(JSON.stringify(metadata));
-    const metadataTxId = await uploadToArweave(metadataBuffer, 'application/json', [
-      { name: 'Wallet', value: walletAddress },
-      { name: 'Type', value: 'metadata' },
-      { name: 'Catalog', value: String(catalogNumber) },
-    ]);
+    if (uploadFallbackUsed) {
+      arweaveUrl = arweaveTxId;
+      metadataUrl = buildFallbackMediaUrl(catalogNumber, 'metadata');
+    } else {
+      // upload metadata json to arweave
+      const metadataBuffer = Buffer.from(JSON.stringify(metadata));
+      const metadataTxId = await uploadToArweave(metadataBuffer, 'application/json', [
+        { name: 'Wallet', value: walletAddress },
+        { name: 'Type', value: 'metadata' },
+        { name: 'Catalog', value: String(catalogNumber) },
+      ]);
 
-    const arweaveUrl = `ar://${arweaveTxId}`;
-    const metadataUrl = `ar://${metadataTxId}`;
+      arweaveUrl = `ar://${arweaveTxId}`;
+      metadataUrl = `ar://${metadataTxId}`;
+    }
 
     // save to supabase with pre-allocated catalog number + display name
     const { data, error } = await supabase

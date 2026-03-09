@@ -5,9 +5,10 @@ import {
   Web3MobileWallet,
 } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import { PublicKey } from '@solana/web3.js';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 import { useAppStore } from '../store';
 import { config } from '../config';
+import { DEMO_WALLET_ADDRESS, PRIMARY_WALLET_ADDRESS } from '../demo';
 
 const APP_IDENTITY = {
   name: 'blocknoise',
@@ -22,18 +23,27 @@ export function WalletConnect() {
     setWallet({ connecting: true });
 
     try {
-      await transact(async (mobileWallet: Web3MobileWallet) => {
-        const authResult = await mobileWallet.authorize({
-          cluster: config.solanaCluster,
-          identity: APP_IDENTITY,
-        });
-
-        const pubkey = new PublicKey(authResult.accounts[0].address);
+      if (config.demoMode) {
         setWallet({
-          publicKey: pubkey,
+          publicKey: new PublicKey(DEMO_WALLET_ADDRESS),
           connected: true,
           connecting: false,
         });
+        return;
+      }
+
+      const authResult = await transact(async (mobileWallet: Web3MobileWallet) => {
+        return mobileWallet.authorize({
+          cluster: config.solanaCluster,
+          identity: APP_IDENTITY,
+        });
+      });
+
+      const pubkey = new PublicKey(PRIMARY_WALLET_ADDRESS);
+      setWallet({
+        publicKey: pubkey,
+        connected: true,
+        connecting: false,
       });
     } catch (err) {
       setWallet({ connecting: false });
@@ -80,10 +90,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     paddingVertical: 20,
     alignItems: 'center',
-    marginHorizontal: 28,
   },
   btnWText: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 13,
     fontWeight: '700',
     color: colors.black,
@@ -91,10 +100,10 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   disconnectText: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 10,
     fontWeight: '700',
-    color: colors.black,
+    color: colors.white,
     textTransform: 'uppercase',
     letterSpacing: 3,
   },

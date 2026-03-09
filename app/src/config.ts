@@ -3,6 +3,11 @@
 export const config = {
   // set to 'mainnet' for production
   network: (process.env.EXPO_PUBLIC_SOLANA_NETWORK ?? 'devnet') as 'devnet' | 'mainnet',
+  demoMode:
+    process.env.EXPO_PUBLIC_DEMO_MODE === 'true' ||
+    !process.env.EXPO_PUBLIC_API_URL,
+  fixedTestStems:
+    process.env.EXPO_PUBLIC_FIXED_TEST_STEMS !== 'false',
 
   get rpcUrl() {
     return this.network === 'mainnet'

@@ -12,22 +12,28 @@ import {
 } from '@solana/spl-token';
 
 import { config } from '../config';
+import { DEMO_WALLET_ADDRESS } from '../demo';
 
 const getRpcUrl = () => config.rpcUrl;
 
-// treasury wallet — receives all mint payments
-// MUST be set in env — no fallback to prevent sending funds to wrong address
-const TREASURY_ADDRESS = process.env.EXPO_PUBLIC_TREASURY_ADDRESS;
-if (!TREASURY_ADDRESS) {
+function getTreasury(): PublicKey {
+  const treasuryAddress = process.env.EXPO_PUBLIC_TREASURY_ADDRESS;
+  if (treasuryAddress) {
+    return new PublicKey(treasuryAddress);
+  }
+
+  if (config.demoMode) {
+    return new PublicKey(DEMO_WALLET_ADDRESS);
+  }
+
   throw new Error(
     'EXPO_PUBLIC_TREASURY_ADDRESS not set — cannot build payment transactions'
   );
 }
-const TREASURY = new PublicKey(TREASURY_ADDRESS);
 
 // token mints
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
-const SKR_MINT = new PublicKey('SKRu3tAuSFsFbcBYcBFBYeRe7M2GGFMTqWELN7epump');
+const SKR_MINT = new PublicKey('SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3');
 
 export function getConnection(): Connection {
   return new Connection(getRpcUrl(), 'confirmed');
@@ -38,11 +44,12 @@ export async function buildSolPaymentTransaction(
   solAmount: number
 ): Promise<Transaction> {
   const connection = getConnection();
+  const treasury = getTreasury();
 
   const transaction = new Transaction().add(
     SystemProgram.transfer({
       fromPubkey,
-      toPubkey: TREASURY,
+      toPubkey: treasury,
       lamports: Math.ceil(solAmount * LAMPORTS_PER_SOL),
     })
   );
@@ -60,11 +67,12 @@ export async function buildTokenPaymentTransaction(
   amount: number
 ): Promise<Transaction> {
   const connection = getConnection();
+  const treasury = getTreasury();
   const mint = tokenMint === 'usdc' ? USDC_MINT : SKR_MINT;
   const decimals = tokenMint === 'usdc' ? 6 : 9;
 
   const fromAta = await getAssociatedTokenAddress(mint, fromPubkey);
-  const toAta = await getAssociatedTokenAddress(mint, TREASURY);
+  const toAta = await getAssociatedTokenAddress(mint, treasury);
 
   const rawAmount = Math.ceil(amount * 10 ** decimals);
 
@@ -100,7 +108,7 @@ export async function buildPaymentTransaction(
     case 'usdc':
       return buildTokenPaymentTransaction(fromPubkey, 'usdc', usdAmount);
     case 'skr': {
-      const skrAmount = (usdAmount / 2) / prices.skrUsd;
+      const skrAmount = usdAmount / prices.skrUsd;
       return buildTokenPaymentTransaction(fromPubkey, 'skr', skrAmount);
     }
   }

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Audio, AVPlaybackStatus } from 'expo-av';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 import { resolveArweaveUrl } from '../utils/arweave';
 
 interface LeaderboardEntry {
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   rank: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 8,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.4)',
@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   wallet: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 8,
     fontWeight: '700',
     color: colors.white,
   },
   catalog: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 7,
     color: 'rgba(255,255,255,0.3)',
     letterSpacing: 0.3,
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   meta: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 5,
     color: colors.grey,
     textTransform: 'uppercase',
@@ -164,14 +164,14 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   score: {
-    fontFamily: 'SpaceGrotesk-Bold',
+    fontFamily: typography.accent,
     fontSize: 9,
     fontWeight: '700',
     color: colors.white,
     lineHeight: 10,
   },
   votes: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 5,
     color: colors.grey,
     lineHeight: 6,

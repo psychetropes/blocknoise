@@ -3,11 +3,13 @@
     "name": "blocknoise",
     "slug": "blocknoise",
     "version": "1.0.0",
+    "icon": "./assets/app-icon.png",
     "orientation": "portrait",
     "platforms": ["android", "web"],
     "android": {
       "package": "io.blocknoise.app",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
         "backgroundColor": "#0012FF"
       }
     },

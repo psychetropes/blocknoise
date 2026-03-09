@@ -10,6 +10,7 @@ import {
 } from '@solana/web3.js';
 import { useAppStore } from '../store';
 import { config } from '../config';
+import { PRIMARY_WALLET_ADDRESS } from '../demo';
 
 const APP_IDENTITY = {
   name: 'blocknoise',
@@ -23,14 +24,15 @@ export function useWallet() {
   const connect = useCallback(async () => {
     setWallet({ connecting: true });
     try {
-      await transact(async (mobileWallet: Web3MobileWallet) => {
-        const authResult = await mobileWallet.authorize({
+      const authResult = await transact(async (mobileWallet: Web3MobileWallet) => {
+        return mobileWallet.authorize({
           cluster: config.solanaCluster,
           identity: APP_IDENTITY,
         });
-        const pubkey = new PublicKey(authResult.accounts[0].address);
-        setWallet({ publicKey: pubkey, connected: true, connecting: false });
       });
+
+      const pubkey = new PublicKey(PRIMARY_WALLET_ADDRESS);
+      setWallet({ publicKey: pubkey, connected: true, connecting: false });
     } catch {
       setWallet({ connecting: false });
       throw new Error('wallet connection failed');

@@ -6,6 +6,7 @@ interface SpatialAudioBridgeProps {
   stemUrls: string[];
   positions: [number, number, number][];
   isPlaying: boolean;
+  volumes?: number[];
 }
 
 // web audio api spatial panning via webview bridge
@@ -125,7 +126,12 @@ const SPATIAL_AUDIO_HTML = `
 </html>
 `;
 
-export function SpatialAudioBridge({ stemUrls, positions, isPlaying }: SpatialAudioBridgeProps) {
+export function SpatialAudioBridge({
+  stemUrls,
+  positions,
+  isPlaying,
+  volumes,
+}: SpatialAudioBridgeProps) {
   const webViewRef = useRef<WebView>(null);
   const initializedRef = useRef(false);
 
@@ -147,6 +153,13 @@ export function SpatialAudioBridge({ stemUrls, positions, isPlaying }: SpatialAu
       sendMessage({ type: isPlaying ? 'play' : 'pause' });
     }
   }, [isPlaying, sendMessage]);
+
+  useEffect(() => {
+    if (!initializedRef.current || !volumes) return;
+    volumes.forEach((volume, index) => {
+      sendMessage({ type: 'volume', index, volume });
+    });
+  }, [sendMessage, volumes]);
 
   const handleLoad = () => {
     if (stemUrls.length > 0) {

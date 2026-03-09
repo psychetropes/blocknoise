@@ -3,8 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
-import { colors } from './theme';
+import { colors, typography } from './theme';
 import { HomeScreen } from './screens/home';
+import { PaymentScreen } from './screens/payment';
 import { GenerateScreen } from './screens/generate';
 import { BlockMixerScreen } from './screens/block-mixer';
 import { MintScreen } from './screens/mint';
@@ -37,14 +38,14 @@ function TabNavigator() {
           backgroundColor: colors.black,
           borderTopColor: colors.black,
           borderTopWidth: 3,
-          height: 64,
-          paddingBottom: 8,
+          height: 82,
+          paddingBottom: 20,
           paddingTop: 8,
         },
         tabBarActiveTintColor: colors.white,
         tabBarInactiveTintColor: 'rgba(255,255,255,0.4)',
         tabBarLabelStyle: {
-          fontFamily: 'JetBrainsMono-Regular',
+          fontFamily: typography.mono,
           fontSize: 9,
           fontWeight: '700',
           textTransform: 'uppercase',
@@ -91,6 +92,7 @@ export function AppNavigator() {
         }}
       >
         <Stack.Screen name="tabs" component={TabNavigator} />
+        <Stack.Screen name="payment" component={PaymentScreen} />
         <Stack.Screen name="generate" component={GenerateScreen} />
         <Stack.Screen name="block-mixer" component={BlockMixerScreen} />
         <Stack.Screen name="mint" component={MintScreen} />

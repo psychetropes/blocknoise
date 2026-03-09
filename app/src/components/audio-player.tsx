@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Audio, AVPlaybackStatus } from 'expo-av';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 
 interface AudioPlayerProps {
   uri: string;
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playIcon: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 12,
     color: colors.white,
   },
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     minWidth: 2,
   },
   time: {
-    fontFamily: 'JetBrainsMono-Regular',
+    fontFamily: typography.mono,
     fontSize: 10,
     color: colors.white,
   },

@@ -12,7 +12,10 @@ interface GenerationState {
   generating: boolean;
   audioUrl: string | null;
   stemUrls: string[];
+  stemWaveforms: number[][];
   genre: string | null;
+  paymentMethod: 'usdc' | 'sol' | 'skr' | null;
+  paymentSignature: string | null;
 }
 
 interface AppStore {
@@ -34,7 +37,10 @@ const initialGeneration: GenerationState = {
   generating: false,
   audioUrl: null,
   stemUrls: [],
+  stemWaveforms: [],
   genre: null,
+  paymentMethod: null,
+  paymentSignature: null,
 };
 
 export const useAppStore = create<AppStore>((set) => ({

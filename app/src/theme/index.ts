@@ -8,3 +8,8 @@ export const colors = {
   pureBlack: '#000000',
 } as const;
 
+export const typography = {
+  display: 'ABCSolar-Bold',
+  mono: 'monospace',
+  accent: 'sans-serif-condensed',
+} as const;

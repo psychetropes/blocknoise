@@ -10,21 +10,24 @@ interface BlockCanvasProps {
   onDrag: (stemIndex: number, position: [number, number, number]) => void;
   isActive: boolean;
   activeStem: number | null;
+  visibleStems?: number[];
   onStemSelect: (index: number | null) => void;
 }
 
 const STEM_COLORS = [colors.white, colors.blue, 'rgba(255,255,255,0.6)'];
-const CUBE_SIZE = 2;
+const ROOM_WIDTH = 2.2;
+const ROOM_HEIGHT = 3.1;
+const ROOM_DEPTH = 3.6;
 
 function WireframeCube() {
   const edges = useMemo(() => {
-    const geometry = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
+    const geometry = new THREE.BoxGeometry(ROOM_WIDTH, ROOM_HEIGHT, ROOM_DEPTH);
     return new THREE.EdgesGeometry(geometry);
   }, []);
 
   return (
     <lineSegments geometry={edges}>
-      <lineBasicMaterial color={colors.grey} opacity={0.4} transparent />
+      <lineBasicMaterial color={colors.blue} opacity={0.75} transparent />
     </lineSegments>
   );
 }
@@ -32,17 +35,40 @@ function WireframeCube() {
 function GridFloor() {
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-    const half = CUBE_SIZE / 2;
-    const divisions = 8;
-    const step = CUBE_SIZE / divisions;
+    const halfW = ROOM_WIDTH / 2;
+    const halfH = ROOM_HEIGHT / 2;
+    const halfD = ROOM_DEPTH / 2;
+    const widthDivisions = 5;
+    const heightDivisions = 5;
+    const depthDivisions = 9;
+    const widthStep = ROOM_WIDTH / widthDivisions;
+    const heightStep = ROOM_HEIGHT / heightDivisions;
+    const depthStep = ROOM_DEPTH / depthDivisions;
 
-    for (let i = 0; i <= divisions; i++) {
-      const pos = -half + i * step;
-      pts.push(new THREE.Vector3(pos, -half, -half));
-      pts.push(new THREE.Vector3(pos, -half, half));
-      pts.push(new THREE.Vector3(-half, -half, pos));
-      pts.push(new THREE.Vector3(half, -half, pos));
+    for (let i = 0; i <= widthDivisions; i++) {
+      const pos = -halfW + i * widthStep;
+      pts.push(new THREE.Vector3(pos, -halfH, -halfD));
+      pts.push(new THREE.Vector3(pos, -halfH, halfD));
+      pts.push(new THREE.Vector3(pos, halfH, -halfD));
+      pts.push(new THREE.Vector3(pos, halfH, halfD));
+     }
+
+    for (let i = 0; i <= depthDivisions; i++) {
+      const pos = -halfD + i * depthStep;
+      pts.push(new THREE.Vector3(-halfW, -halfH, pos));
+      pts.push(new THREE.Vector3(halfW, -halfH, pos));
+      pts.push(new THREE.Vector3(-halfW, halfH, pos));
+      pts.push(new THREE.Vector3(halfW, halfH, pos));
     }
+
+    for (let i = 0; i <= heightDivisions; i++) {
+      const pos = -halfH + i * heightStep;
+      pts.push(new THREE.Vector3(-halfW, pos, -halfD));
+      pts.push(new THREE.Vector3(-halfW, pos, halfD));
+      pts.push(new THREE.Vector3(halfW, pos, -halfD));
+      pts.push(new THREE.Vector3(halfW, pos, halfD));
+    }
+
     return pts;
   }, []);
 
@@ -53,7 +79,7 @@ function GridFloor() {
 
   return (
     <lineSegments geometry={geometry}>
-      <lineBasicMaterial color={colors.dark} opacity={0.3} transparent />
+      <lineBasicMaterial color={colors.blue} opacity={0.22} transparent />
     </lineSegments>
   );
 }
@@ -126,19 +152,6 @@ function StemTrail({ points, color }: { points: [number, number, number][]; colo
   );
 }
 
-function RotatingGroup({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame(({ clock }) => {
-    if (groupRef.current && !isActive) {
-      // gentle idle rotation when not mixing
-      groupRef.current.rotation.y = Math.sin(clock.elapsedTime * 0.3) * 0.2;
-    }
-  });
-
-  return <group ref={groupRef}>{children}</group>;
-}
-
 function DragHandler({
   activeStem,
   onDrag,
@@ -167,10 +180,12 @@ function DragHandler({
         raycaster.current.ray.intersectPlane(planeRef.current, intersection.current);
 
         // clamp to cube bounds
-        const half = CUBE_SIZE / 2;
-        const x = Math.max(-half, Math.min(half, intersection.current.x));
-        const y = Math.max(-half, Math.min(half, intersection.current.y));
-        const z = Math.max(-half, Math.min(half, intersection.current.z));
+        const halfW = ROOM_WIDTH / 2;
+        const halfH = ROOM_HEIGHT / 2;
+        const halfD = ROOM_DEPTH / 2;
+        const x = Math.max(-halfW, Math.min(halfW, intersection.current.x));
+        const y = Math.max(-halfH, Math.min(halfH, intersection.current.y));
+        const z = Math.max(-halfD, Math.min(halfD, intersection.current.z));
 
         onDrag(activeStem, [x, y, z]);
       }}
@@ -190,9 +205,14 @@ export function BlockCanvas({
   onDrag,
   isActive,
   activeStem,
+  visibleStems,
   onStemSelect,
 }: BlockCanvasProps) {
   const trailsRef = useRef<[number, number, number][][]>([[], [], []]);
+  const visibleStemSet = useMemo(
+    () => new Set(visibleStems ?? positions.map((_, index) => index)),
+    [positions, visibleStems]
+  );
 
   // accumulate trail points
   if (isActive) {
@@ -210,32 +230,36 @@ export function BlockCanvas({
   return (
     <View style={styles.container}>
       <Canvas
-        camera={{ position: [3, 2.5, 3], fov: 50 }}
+        camera={{ position: [0, 0, 5.4], fov: 34 }}
         style={{ flex: 1 }}
       >
-        <ambientLight intensity={0.3} />
-        <pointLight position={[5, 5, 5]} intensity={0.8} />
-        <pointLight position={[-3, -3, 2]} intensity={0.4} color={colors.blue} />
+        <ambientLight intensity={0.2} />
+        <pointLight position={[0, 0, 6]} intensity={0.55} />
+        <pointLight position={[-3, -3, 2]} intensity={0.2} color={colors.blue} />
 
-        <RotatingGroup isActive={isActive}>
+        <group>
           <WireframeCube />
           <GridFloor />
 
-          {positions.map((pos, i) => (
-            <StemSphere
-              key={i}
-              position={pos}
-              color={STEM_COLORS[i]}
-              index={i}
-              isSelected={activeStem === i}
-              onSelect={() => onStemSelect(activeStem === i ? null : i)}
-            />
-          ))}
+          {positions.map((pos, i) =>
+            visibleStemSet.has(i) ? (
+              <StemSphere
+                key={i}
+                position={pos}
+                color={STEM_COLORS[i]}
+                index={i}
+                isSelected={activeStem === i}
+                onSelect={() => onStemSelect(activeStem === i ? null : i)}
+              />
+            ) : null
+          )}
 
-          {trailsRef.current.map((points, i) => (
-            <StemTrail key={i} points={points} color={STEM_COLORS[i]} />
-          ))}
-        </RotatingGroup>
+          {trailsRef.current.map((points, i) =>
+            visibleStemSet.has(i) ? (
+              <StemTrail key={i} points={points} color={STEM_COLORS[i]} />
+            ) : null
+          )}
+        </group>
 
         {isActive && <DragHandler activeStem={activeStem} onDrag={onDrag} />}
       </Canvas>

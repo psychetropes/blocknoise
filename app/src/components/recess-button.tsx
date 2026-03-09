@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   TouchableWithoutFeedback,
@@ -17,92 +17,123 @@ interface RecessButtonProps {
   children: React.ReactNode;
   onPress?: () => void;
   selected?: boolean;
+  sticky?: boolean;
   style?: ViewStyle;
   bg?: string;
+  interactive?: boolean;
 }
 
 export function RecessButton({
   children,
   onPress,
-  selected = false,
+  selected,
+  sticky = true,
   style,
   bg = colors.black,
+  interactive = true,
 }: RecessButtonProps) {
-  const anim = useRef(new Animated.Value(selected ? 1 : 0)).current;
+  const controlled = selected !== undefined;
+  const [latched, setLatched] = useState(false);
+  const isSelected = controlled ? !!selected : latched;
+  const [pressed, setPressed] = useState(isSelected);
+  const anim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
 
-  const handlePressIn = () => {
+  const animateTo = (value: 0 | 1) => {
     Animated.timing(anim, {
-      toValue: 1,
+      toValue: value,
       duration: 120,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   };
 
-  const handlePressOut = () => {
-    if (!selected) {
-      Animated.timing(anim, {
-        toValue: 0,
-        duration: 120,
-        useNativeDriver: false,
-      }).start();
-    }
+  React.useEffect(() => {
+    setPressed(isSelected);
+    animateTo(isSelected ? 1 : 0);
+  }, [isSelected]);
+
+  const handlePressIn = () => {
+    setPressed(true);
+    animateTo(1);
   };
 
-  const coords = selected ? PRESSED : REST;
+  const handlePressOut = () => {
+    setPressed(isSelected);
+    animateTo(isSelected ? 1 : 0);
+  };
+
+  const handlePress = () => {
+    if (!controlled && sticky && onPress) {
+      setLatched((prev) => !prev);
+    }
+    onPress?.();
+  };
+  const coords = pressed || isSelected ? PRESSED : REST;
+  const translateY = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 2],
+  });
+
+  const content = (
+    <Animated.View
+      style={[
+        styles.container,
+        { backgroundColor: bg, transform: [{ translateY: interactive ? translateY : 0 }] },
+        style,
+      ]}
+    >
+      <Svg
+        viewBox="0 0 100 100"
+        style={StyleSheet.absoluteFill}
+        preserveAspectRatio="none"
+      >
+        <Polygon
+          points={`0,0 100,0 ${coords.x2},${coords.y1} ${coords.x1},${coords.y1}`}
+          fill="rgba(255,255,255,0.07)"
+        />
+        <Polygon
+          points={`100,0 100,100 ${coords.x2},${coords.y2} ${coords.x2},${coords.y1}`}
+          fill="rgba(255,255,255,0.05)"
+        />
+        <Polygon
+          points={`0,100 100,100 ${coords.x2},${coords.y2} ${coords.x1},${coords.y2}`}
+          fill="rgba(255,255,255,0.02)"
+        />
+        <Polygon
+          points={`0,0 0,100 ${coords.x1},${coords.y2} ${coords.x1},${coords.y1}`}
+          fill="rgba(255,255,255,0.035)"
+        />
+        <Line x1="0" y1="0" x2={coords.x1} y2={coords.y1} stroke="#444" strokeWidth="1" />
+        <Line x1="100" y1="0" x2={coords.x2} y2={coords.y1} stroke="#444" strokeWidth="1" />
+        <Line x1="0" y1="100" x2={coords.x1} y2={coords.y2} stroke="#444" strokeWidth="1" />
+        <Line x1="100" y1="100" x2={coords.x2} y2={coords.y2} stroke="#444" strokeWidth="1" />
+        <Rect
+          x={coords.x1}
+          y={coords.y1}
+          width={coords.x2 - coords.x1}
+          height={coords.y2 - coords.y1}
+          fill="none"
+          stroke="#444"
+          strokeWidth="1"
+        />
+      </Svg>
+      <View style={styles.content}>
+        {children}
+      </View>
+      {(isSelected || pressed) && <View style={styles.glow} />}
+    </Animated.View>
+  );
+
+  if (!interactive) {
+    return content;
+  }
 
   return (
     <TouchableWithoutFeedback
-      onPress={onPress}
+      onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
     >
-      <View style={[styles.container, { backgroundColor: bg }, style]}>
-        <Svg
-          viewBox="0 0 100 100"
-          style={StyleSheet.absoluteFill}
-          preserveAspectRatio="none"
-        >
-          {/* top wall */}
-          <Polygon
-            points={`0,0 100,0 ${coords.x2},${coords.y1} ${coords.x1},${coords.y1}`}
-            fill="rgba(255,255,255,0.07)"
-          />
-          {/* right wall */}
-          <Polygon
-            points={`100,0 100,100 ${coords.x2},${coords.y2} ${coords.x2},${coords.y1}`}
-            fill="rgba(255,255,255,0.05)"
-          />
-          {/* bottom wall */}
-          <Polygon
-            points={`0,100 100,100 ${coords.x2},${coords.y2} ${coords.x1},${coords.y2}`}
-            fill="rgba(255,255,255,0.02)"
-          />
-          {/* left wall */}
-          <Polygon
-            points={`0,0 0,100 ${coords.x1},${coords.y2} ${coords.x1},${coords.y1}`}
-            fill="rgba(255,255,255,0.035)"
-          />
-          {/* corner lines */}
-          <Line x1="0" y1="0" x2={coords.x1} y2={coords.y1} stroke="#444" strokeWidth="1" />
-          <Line x1="100" y1="0" x2={coords.x2} y2={coords.y1} stroke="#444" strokeWidth="1" />
-          <Line x1="0" y1="100" x2={coords.x1} y2={coords.y2} stroke="#444" strokeWidth="1" />
-          <Line x1="100" y1="100" x2={coords.x2} y2={coords.y2} stroke="#444" strokeWidth="1" />
-          {/* inner rect */}
-          <Rect
-            x={coords.x1}
-            y={coords.y1}
-            width={coords.x2 - coords.x1}
-            height={coords.y2 - coords.y1}
-            fill="none"
-            stroke="#444"
-            strokeWidth="1"
-          />
-        </Svg>
-        <View style={styles.content}>
-          {children}
-        </View>
-        {selected && <View style={styles.glow} />}
-      </View>
+      {content}
     </TouchableWithoutFeedback>
   );
 }

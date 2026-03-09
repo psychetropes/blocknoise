@@ -5,7 +5,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 const router = Router();
 
 // skr token mint address (solana mainnet)
-const SKR_MINT = 'SKRu3tAuSFsFbcBYcBFBYeRe7M2GGFMTqWELN7epump';
+const SKR_MINT = 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3';
 
 interface VoteBody {
   usiId: string;
