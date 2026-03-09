@@ -16,14 +16,20 @@ router.get('/', async (_req: Request, res: Response) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data, error } = await supabase
-      .from('leaderboard')
-      .select('*')
-      .order('score', { ascending: false })
+      .from('usis')
+      .select('id, wallet_address, display_name, arweave_url, tier, genre, catalog_number, created_at')
+      .order('catalog_number', { ascending: false })
       .limit(100);
 
     if (error) throw error;
 
-    res.json(data ?? []);
+    res.json(
+      (data ?? []).map((entry) => ({
+        ...entry,
+        score: 0,
+        vote_count: 0,
+      }))
+    );
   } catch (err) {
     console.error('leaderboard error:', err);
     res.status(500).json({

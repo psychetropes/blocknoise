@@ -32,7 +32,7 @@ export function useMint() {
       setError(null);
 
       try {
-        if (config.demoMode) {
+        if (config.demoMode || config.network !== 'mainnet') {
           return {
             id: `demo-${Date.now()}`,
             catalogNumber: Math.floor(Date.now() / 1000),

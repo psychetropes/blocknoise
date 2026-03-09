@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <rect width="1024" height="1024" fill="#0012FF"/>
-  <polygon points="18,18 1006,18 804,94 58,94" fill="#151515"/>
-  <polygon points="18,18 58,94 58,836 18,1006" fill="#111111"/>
-  <polygon points="1006,18 804,94 804,836 1006,1006" fill="#141414"/>
-  <polygon points="18,1006 58,836 804,836 1006,1006" fill="#050505"/>
-  <rect x="58" y="94" width="746" height="742" fill="#000000"/>
-  <polyline points="18,18 58,94 58,836 18,1006" fill="none" stroke="#404040" stroke-width="4"/>
-  <polyline points="1006,18 804,94 804,836 1006,1006" fill="none" stroke="#404040" stroke-width="4"/>
-  <polyline points="18,18 1006,18 804,94 58,94 18,18" fill="none" stroke="#404040" stroke-width="4"/>
-  <polyline points="18,1006 1006,1006 804,836 58,836 18,1006" fill="none" stroke="#404040" stroke-width="4"/>
-  <rect x="58" y="94" width="746" height="742" fill="none" stroke="#404040" stroke-width="4"/>
+  <polygon points="262,286 760,286 650,338 302,338" fill="#141414"/>
+  <polygon points="262,286 302,338 302,696 262,788" fill="#101010"/>
+  <polygon points="760,286 650,338 650,696 760,788" fill="#171717"/>
+  <polygon points="262,788 302,696 650,696 760,788" fill="#0D0D0D"/>
+  <rect x="302" y="338" width="348" height="358" fill="#000000"/>
+  <polyline points="262,286 302,338 302,696 262,788" fill="none" stroke="#3E3E3E" stroke-width="3"/>
+  <polyline points="760,286 650,338 650,696 760,788" fill="none" stroke="#3E3E3E" stroke-width="3"/>
+  <polyline points="262,286 760,286 650,338 302,338 262,286" fill="none" stroke="#3E3E3E" stroke-width="3"/>
+  <polyline points="262,788 760,788 650,696 302,696 262,788" fill="none" stroke="#3E3E3E" stroke-width="3"/>
+  <rect x="302" y="338" width="348" height="358" fill="none" stroke="#3E3E3E" stroke-width="3"/>
 </svg>

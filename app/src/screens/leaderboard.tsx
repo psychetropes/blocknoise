@@ -91,7 +91,7 @@ export function LeaderboardScreen() {
         }
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {loading ? 'loading...' : 'no usis minted yet'}
+            {loading ? 'loading...' : 'no compositions minted yet'}
           </Text>
         }
       />

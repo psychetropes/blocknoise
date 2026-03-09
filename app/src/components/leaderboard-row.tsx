@@ -36,6 +36,12 @@ export function LeaderboardRow({ entry, rank }: LeaderboardRowProps) {
   }, []);
 
   const handlePlay = async () => {
+    await Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: false,
+      shouldDuckAndroid: true,
+    });
+
     if (!soundRef.current) {
       const { sound } = await Audio.Sound.createAsync(
         { uri: resolveArweaveUrl(entry.arweave_url) },

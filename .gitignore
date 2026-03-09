@@ -55,3 +55,6 @@ npm-debug.log*
 # misc
 *.apk
 *.aab
+screen-captures/
+preview/screen-captures/
+blocknoise-pitch.pptx

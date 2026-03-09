@@ -251,7 +251,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     const metadata = {
       name: `#blocknoise#${catalogNumber} — ${displayLabel}`,
-      description: `unique sound identifier #blocknoise#${catalogNumber} generated from solana wallet ${walletAddress}. part of the blocknoise research project — a psyché tropes imprint.`,
+      description: `composition #blocknoise#${catalogNumber} generated from solana wallet ${walletAddress}. part of the blocknoise research project — a psyché tropes imprint.`,
       image: 'https://blocknoise.io/cover.png',
       animation_url: arweaveTxId.startsWith('fallback://') ? arweaveTxId : `ar://${arweaveTxId}`,
       external_url: 'https://blocknoise.io',

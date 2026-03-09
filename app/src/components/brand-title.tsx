@@ -19,11 +19,8 @@ export function BrandTitle({ size = 68, lineHeight = 68 }: BrandTitleProps) {
 
   return (
     <View style={styles.outer}>
-      <View style={[styles.wrapper, blockWidth ? { width: blockWidth } : null]}>
-        <Text
-          onLayout={handleBlockLayout}
-          style={[styles.line, { fontSize: size, lineHeight }]}
-        >
+      <View style={[styles.wrapper, blockWidth ? { width: blockWidth, opacity: 1 } : styles.hiddenWordmark]}>
+        <Text onLayout={handleBlockLayout} style={[styles.line, { fontSize: size, lineHeight }]}>
           BLOCK
         </Text>
         <View style={[styles.noiseRow, blockWidth ? { width: blockWidth } : null]}>
@@ -53,6 +50,9 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'flex-start',
   },
+  hiddenWordmark: {
+    opacity: 0,
+  },
   line: {
     fontFamily: typography.display,
     color: colors.white,
@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   noiseRow: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },

@@ -39,7 +39,6 @@ export function HomeScreen({ navigation }: { navigation: any }) {
   const getDisplayAmount = (usdPrice: number, method: 'usdc' | 'sol' | 'skr') =>
     calculatePaymentAmount(usdPrice, method, prices).display.replace(/ (usdc|sol|skr)$/i, '');
 
-  // disconnected — show BLOCK NOISE title + connect button
   if (!wallet.connected) {
     return (
       <ScreenFrame>
@@ -51,7 +50,6 @@ export function HomeScreen({ navigation }: { navigation: any }) {
     );
   }
 
-  // connected — show wallet + tier cards + mint button
   return (
     <ScreenFrame
       headerLeft={shortWallet}
@@ -111,7 +109,6 @@ export function HomeScreen({ navigation }: { navigation: any }) {
         </RecessButton>
       </View>
 
-      {/* mint button */}
       <TouchableOpacity style={styles.btnW} onPress={() => handleGenerate('standard')}>
         <Text style={styles.btnWText}>choose composition</Text>
       </TouchableOpacity>

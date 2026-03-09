@@ -6,9 +6,11 @@ import { Text } from 'react-native';
 import { colors, typography } from './theme';
 import { HomeScreen } from './screens/home';
 import { PaymentScreen } from './screens/payment';
+import { PaymentStatusScreen } from './screens/payment-status';
 import { GenerateScreen } from './screens/generate';
 import { BlockMixerScreen } from './screens/block-mixer';
 import { MintScreen } from './screens/mint';
+import { MintCompleteScreen } from './screens/mint-complete';
 import { LeaderboardScreen } from './screens/leaderboard';
 import { RadioScreen } from './screens/radio';
 
@@ -93,9 +95,11 @@ export function AppNavigator() {
       >
         <Stack.Screen name="tabs" component={TabNavigator} />
         <Stack.Screen name="payment" component={PaymentScreen} />
+        <Stack.Screen name="payment-status" component={PaymentStatusScreen} />
         <Stack.Screen name="generate" component={GenerateScreen} />
         <Stack.Screen name="block-mixer" component={BlockMixerScreen} />
         <Stack.Screen name="mint" component={MintScreen} />
+        <Stack.Screen name="mint-complete" component={MintCompleteScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

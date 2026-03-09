@@ -4,6 +4,7 @@ import { setCachedAudio } from '../audio-cache';
 const router = Router();
 
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/sound-generation';
+const MAX_PROMPT_LENGTH = 440;
 
 const MATERIALS = [
   'granular metallic percussion',
@@ -26,6 +27,14 @@ const MATERIALS = [
   'plucked string fragments',
   'bowed harmonic tones',
   'detuned piano fragments',
+  'rubbery bass stabs',
+  'synthetic choir swells',
+  'shredded guitar particles',
+  'FM bell tones',
+  'sequenced arpeggio fragments',
+  'vocoder breaths',
+  'sub bass throbs',
+  'contact-mic rattles',
 ];
 
 const PALETTES = [
@@ -37,6 +46,11 @@ const PALETTES = [
   'abstract melodic fragments',
   'spoken-word micro-samples',
   'hybrid electroacoustic textures',
+  'minimal techno tools',
+  'broken pop abstraction',
+  'mechanical dub pulses',
+  'mutant club rhythm',
+  'digital chamber music',
 ];
 
 const MOTIONS = [
@@ -74,39 +88,66 @@ const COLORS = [
   'rust black',
   'acid green',
   'sodium orange',
+  'bone white',
+  'violet black',
+  'toxic yellow',
+];
+
+const STRUCTURES = [
+  'tight loop with one strong recurring motif',
+  'asymmetric loop with unstable accents',
+  'evolving loop with one sudden rupture',
+  'call-and-response loop with contrasting layers',
+  'minimal loop with aggressive negative space',
+  'dense loop with interlocking fragments',
+];
+
+const TEMPOS = [
+  'slow',
+  'mid-tempo',
+  'fast',
+  'lurching',
+  'stuttering',
+  'driving',
+];
+
+const ENERGY = [
+  'tense',
+  'playful',
+  'ominous',
+  'euphoric',
+  'mechanical',
+  'unsettled',
 ];
 
 const EXCLUSIONS = [
-  'do not use water sounds',
-  'do not use ocean ambience',
-  'do not use rain recordings',
-  'do not use stream textures',
-  'do not use any field-recorded nature ambience',
-  'do not use whale-like pads or watery whooshes',
-  'do not use cinematic swell endings',
-  'do not use vocal phrases',
-  'do not use meditation ambience',
-  'do not use spa or relaxation textures',
+  'water',
+  'ocean ambience',
+  'rain',
+  'stream textures',
+  'nature ambience',
+  'watery whooshes',
+  'cinematic swells',
+  'vocal phrases',
+  'meditation ambience',
+  'spa textures',
 ];
 
 const STEM_BLUEPRINTS = [
   {
     role: 'low rhythmic foundation',
     palette: 'percussive electronic rhythm',
-    instruction:
-      'Make it percussive, dry, physical, and pulse-driven. Use drums, impacts, clipped kicks, bass pulses, or machine rhythm. Do not make this ambient.',
+    instruction: 'Percussive, dry, pulse-driven, and non-ambient.',
   },
   {
     role: 'midrange tonal and voice layer',
     palette: 'tonal melodic and voice-based material',
-    instruction:
-      'Make it tonal, melodic, or voice-based. Use synthetic voice, chopped syllables, chords, melody fragments, pitched tones, or harmonic movement. Do not make this watery ambience.',
+    instruction: 'Tonal, melodic, or voice-led with clear pitch movement.',
   },
   {
     role: 'high detail texture and glitch layer',
     palette: 'noise texture and glitch detail',
-    instruction:
-      'Make it sharp, brittle, noisy, and detailed. Use hiss, crackle, distortion, glitch shards, digital errors, or bright synthetic top-end. Do not make this soft ambient wash.',
+    instruction: 'Sharp, brittle, noisy, detailed, and never a soft wash.',
   },
 ];
 
@@ -137,34 +178,38 @@ function buildPrompt(walletAddress: string, tier: 'standard' | 'pro', index = 0)
   const color = pickFromSeed(COLORS, seed, 4);
   const exclusionA = pickFromSeed(EXCLUSIONS, seed, 5);
   const exclusionB = pickFromSeed(EXCLUSIONS, seed + 11, 6);
+  const structure = pickFromSeed(STRUCTURES, seed, 8);
+  const tempo = pickFromSeed(TEMPOS, seed, 9);
+  const energy = pickFromSeed(ENERGY, seed, 10);
 
   if (tier === 'standard') {
-    return [
-      'Create one looping 30-second experimental electronic composition.',
-      `Base it on ${palette}. Use ${material} with ${motion}.`,
-      `Keep the atmosphere ${color} inside a ${space}.`,
-      'Use a wide palette that may include music, voice-like material, tones, melody fragments, rhythm, percussion, and synthetic textures.',
-      'Make it synthetic, textural, memorable, and clearly not ambient water music.',
-      'Favor contrast, motion, and identifiable sonic character over soft ambience.',
-      exclusionA,
-      exclusionB,
-    ].join(' ');
+    return clampPrompt([
+      'Looping 30-second experimental electronic composition.',
+      `${palette}; ${material}; ${motion}; ${structure}.`,
+      `${tempo}, ${energy}, ${color}, ${space}.`,
+      'Use rhythm, melody, tones, voice, percussion, or glitch.',
+      'No water, rain, ocean, nature, spa, or soft ambient wash.',
+    ].join(' '));
   }
 
   const blueprint = STEM_BLUEPRINTS[index] ?? STEM_BLUEPRINTS[0];
 
-  return [
-    `Create one looping 30-second stem for a three-stem spatial composition: ${blueprint.role}.`,
-    `This stem must belong clearly to the sound family: ${blueprint.palette}.`,
-    `Base it on ${palette}. Use ${material} with ${motion}.`,
-    `Keep the atmosphere ${color} inside a ${space}.`,
-    blueprint.instruction,
-    'Use a wide palette that may include music, voice-like material, tones, melody fragments, rhythm, percussion, and synthetic textures.',
-    'The stem must stand alone clearly and also combine with the other stems without turning into ambient wash.',
-    'Keep the sound synthetic, sharply characterized, and obviously different from the other stem families.',
-    exclusionA,
-    exclusionB,
-  ].join(' ');
+  return clampPrompt([
+    `Looping 30-second stem for ${blueprint.role}.`,
+    `${blueprint.palette}. ${blueprint.instruction}`,
+    `${palette}; ${material}; ${motion}; ${structure}.`,
+    `${tempo}, ${energy}, ${color}, ${space}.`,
+    'Use rhythm, melody, tones, percussion, voice, or glitch.',
+    `Avoid ${exclusionA} and ${exclusionB}.`,
+  ].join(' '));
+}
+
+function clampPrompt(prompt: string) {
+  if (prompt.length <= MAX_PROMPT_LENGTH) {
+    return prompt;
+  }
+
+  return `${prompt.slice(0, MAX_PROMPT_LENGTH - 1).trimEnd()}.`;
 }
 
 router.post('/', async (req: Request, res: Response) => {
@@ -227,6 +272,11 @@ async function generateStem(
   apiKey: string,
   promptText: string
 ): Promise<{ dataUrl: string; raw: string; waveform: number[] }> {
+  console.log('elevenlabs prompt', {
+    length: promptText.length,
+    preview: promptText.slice(0, 140),
+  });
+
   const response = await fetch(ELEVENLABS_API_URL, {
     method: 'POST',
     headers: {

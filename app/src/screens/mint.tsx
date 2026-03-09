@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   StyleSheet,
-  PanResponder,
-  Animated,
+  FlatList,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import { colors, typography } from '../theme';
@@ -30,6 +30,8 @@ const GENRES = [
   'sound art', 'lo-fi', 'harsh noise', 'power electronics', 'tape music',
   'generative', 'modular', 'microsound', 'acousmatic', 'dark techno', 'ritual',
 ];
+const GENRE_ROW_HEIGHT = 24;
+const GENRE_PICKER_HEIGHT = GENRE_ROW_HEIGHT * 5;
 
 export function MintScreen({ navigation, route }: { navigation: any; route: any }) {
   const { wallet, generation, setGeneration } = useAppStore();
@@ -40,7 +42,7 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
   const [selectedGenreIndex, setSelectedGenreIndex] = useState(
     Math.max(0, generation.genre ? GENRES.indexOf(generation.genre) : 0)
   );
-  const dragOffset = useRef(new Animated.Value(0)).current;
+  const genreListRef = useRef<FlatList<string> | null>(null);
   const shortWallet = wallet.publicKey
     ? `${wallet.publicKey.toBase58().slice(0, 4)}...${wallet.publicKey.toBase58().slice(-4)}`
     : '';
@@ -51,6 +53,17 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
       setSelectedGenreIndex(GENRES.indexOf(generation.genre));
     }
   }, [generation.genre]);
+
+  useEffect(() => {
+    if (!genreListRef.current) {
+      return;
+    }
+
+    genreListRef.current.scrollToOffset({
+      offset: selectedGenreIndex * GENRE_ROW_HEIGHT,
+      animated: false,
+    });
+  }, [selectedGenreIndex]);
 
   useEffect(() => {
     fetchNextCatalog();
@@ -83,65 +96,34 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
     if (!wallet.publicKey || !generation.genre) return;
     const result = await mint(generation.paymentMethod ?? 'usdc', spatialPath);
     if (result) {
-      const label = result.displayName
-        ? `#blocknoise#${result.catalogNumber} — ${result.displayName}`
-        : `#blocknoise#${result.catalogNumber}`;
-      Alert.alert(
-        'minted!',
-        `${label} — your ${generation.tier} usi has been permanently stored on arweave.`,
-        [{ text: 'view leaderboard', onPress: () => navigation.navigate('tabs', { screen: 'leaderboard' }) }]
-      );
+      navigation.replace('mint-complete', {
+        catalogNumber: result.catalogNumber,
+        mintAddress: result.mintAddress,
+      });
     }
   };
 
-  const wrapIndex = (value: number) => {
-    const length = GENRES.length;
-    return ((value % length) + length) % length;
+  const handleGenreScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const nextIndex = Math.max(
+      0,
+      Math.min(GENRES.length - 1, Math.round(event.nativeEvent.contentOffset.y / GENRE_ROW_HEIGHT))
+    );
+    if (nextIndex !== selectedGenreIndex) {
+      setSelectedGenreIndex(nextIndex);
+    }
+    genreListRef.current?.scrollToOffset({
+      offset: nextIndex * GENRE_ROW_HEIGHT,
+      animated: true,
+    });
   };
 
-  const visibleGenres = useMemo(
-    () =>
-      Array.from({ length: 5 }, (_, visibleIndex) => {
-        const offset = visibleIndex - 2;
-        const genreIndex = wrapIndex(selectedGenreIndex + offset);
-        return {
-          genre: GENRES[genreIndex],
-          offset,
-        };
-      }),
-    [selectedGenreIndex]
-  );
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderMove: (_, gestureState) => {
-          const clamped = Math.max(-120, Math.min(120, gestureState.dy));
-          dragOffset.setValue(clamped);
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          const step = Math.round(gestureState.dy / 34);
-          setSelectedGenreIndex((prev) => wrapIndex(prev - step));
-          Animated.spring(dragOffset, {
-            toValue: 0,
-            useNativeDriver: true,
-            speed: 18,
-            bounciness: 4,
-          }).start();
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(dragOffset, {
-            toValue: 0,
-            useNativeDriver: true,
-            speed: 18,
-            bounciness: 4,
-          }).start();
-        },
-      }),
-    [dragOffset]
-  );
+  const selectGenre = (index: number) => {
+    setSelectedGenreIndex(index);
+    genreListRef.current?.scrollToOffset({
+      offset: index * GENRE_ROW_HEIGHT,
+      animated: true,
+    });
+  };
 
   return (
     <ScreenFrame headerLeft={shortWallet} headerRight="LOCKED">
@@ -153,32 +135,40 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
 
       <RecessButton style={styles.genreBox} interactive={false}>
         <View style={styles.genreOverlay}>
-          <View style={styles.genreViewport} {...panResponder.panHandlers}>
+          <View style={styles.genreViewport}>
             <View style={styles.genreCenterBand} />
-            {visibleGenres.map(({ genre, offset }) => {
-              const distance = Math.abs(offset);
-              const isCentered = offset === 0;
-
-              return (
-                <Animated.View
-                  key={`${genre}-${offset}`}
-                  style={[
-                    styles.genreRow,
-                    {
-                      transform: [
-                        { translateY: offset * 34 },
-                        { translateY: dragOffset },
-                      ],
-                      opacity: isCentered ? 1 : Math.max(0.18, 0.7 - distance * 0.14),
-                    },
-                  ]}
-                >
-                  <Text style={[styles.genreItem, isCentered && styles.genreItemSelected]}>
-                    {genre.toUpperCase()}
-                  </Text>
-                </Animated.View>
-              );
-            })}
+            <FlatList
+              ref={genreListRef}
+              data={GENRES}
+              keyExtractor={(item) => item}
+              showsVerticalScrollIndicator={false}
+              snapToInterval={GENRE_ROW_HEIGHT}
+              decelerationRate="fast"
+              bounces={false}
+              onMomentumScrollEnd={handleGenreScrollEnd}
+              onScrollEndDrag={handleGenreScrollEnd}
+              getItemLayout={(_data, index) => ({
+                length: GENRE_ROW_HEIGHT,
+                offset: GENRE_ROW_HEIGHT * index,
+                index,
+              })}
+              contentContainerStyle={styles.genreScrollContent}
+              renderItem={({ item: genre, index }) => {
+                const isCentered = index === selectedGenreIndex;
+                return (
+                  <TouchableOpacity
+                    key={genre}
+                    activeOpacity={0.85}
+                    style={styles.genreRow}
+                    onPress={() => selectGenre(index)}
+                  >
+                    <Text style={[styles.genreItem, isCentered && styles.genreItemSelected]}>
+                      {genre.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
           </View>
         </View>
       </RecessButton>
@@ -213,7 +203,7 @@ export function MintScreen({ navigation, route }: { navigation: any; route: any 
         {minting ? (
           <ActivityIndicator color={colors.black} />
         ) : (
-          <Text style={styles.btnWText}>mint to arweave</Text>
+          <Text style={styles.btnWText}>mint composition</Text>
         )}
       </TouchableOpacity>
       <View style={{ height: 28 }} />
@@ -239,12 +229,12 @@ const styles = StyleSheet.create({
   },
   genreItem: {
     fontFamily: typography.mono,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: '700',
     color: colors.grey,
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 1,
     textAlign: 'center',
   },
   genreItemSelected: {
@@ -252,6 +242,7 @@ const styles = StyleSheet.create({
   },
   genreBox: {
     aspectRatio: 1,
+    overflow: 'hidden',
   },
   genreOverlay: {
     position: 'absolute',
@@ -265,30 +256,28 @@ const styles = StyleSheet.create({
   genreViewport: {
     flex: 1,
     overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: '18%',
+    paddingBottom: '18%',
+    paddingHorizontal: '10%',
   },
   genreCenterBand: {
     position: 'absolute',
     left: '10%',
     right: '10%',
-    top: '48%',
-    height: '12%',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    top: '50%',
+    height: GENRE_ROW_HEIGHT,
+    marginTop: -(GENRE_ROW_HEIGHT / 2),
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  genreScrollContent: {
+    paddingTop: (GENRE_PICKER_HEIGHT - GENRE_ROW_HEIGHT) / 2,
+    paddingBottom: (GENRE_PICKER_HEIGHT - GENRE_ROW_HEIGHT) / 2,
   },
   genreRow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: '54%',
-    marginTop: -9,
     width: '100%',
-    alignItems: 'center',
+    height: GENRE_ROW_HEIGHT,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   fullWallet: {
     fontFamily: typography.mono,
