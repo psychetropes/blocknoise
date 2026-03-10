@@ -20,14 +20,14 @@ blocknoise is a research imprint of psyché tropes, an experimental audiovisual 
 
 - 1 x 30-second looping track
 - $10 USD equivalent
-- 50% discount when paying with `SKR`
+- 50% discount for .skr or .sol addresses when paying with `SKR`
 
 **spatial composition**
 
 - 3 x 30-second stems
 - 3D spatial mixer
 - $20 USD equivalent
-- 50% discount when paying with `SKR`
+- 50% discount for .skr or .sol addresses when paying with `SKR`
 
 ## current product flow
 
@@ -153,6 +153,7 @@ cd app/android
 ## notes
 
 - Pricing is USD-pegged and converted live for `SOL` and `SKR`.
+- The `SKR` half-price discount is only applied for wallets that resolve to a `.skr` or `.sol` domain.
 - ElevenLabs keys stay server-side.
 - Generated audio is requested as looping audio.
 - The app includes devnet-safe fallback behavior for demo flows.

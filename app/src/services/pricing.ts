@@ -14,6 +14,11 @@ export interface PriceData {
   skrUsd: number;
 }
 
+export interface DiscountEligibility {
+  domain: string | null;
+  skrDiscountEligible: boolean;
+}
+
 interface JupiterPriceEntry {
   usdPrice?: number;
   price?: number | string;
@@ -90,20 +95,47 @@ export async function fetchPrices(): Promise<PriceData> {
   }
 }
 
+export async function fetchDiscountEligibility(
+  walletAddress: string
+): Promise<DiscountEligibility> {
+  const apiUrl = getApiUrl();
+
+  if (!apiUrl) {
+    return {
+      domain: null,
+      skrDiscountEligible: false,
+    };
+  }
+
+  const res = await fetch(
+    `${apiUrl}/eligibility?walletAddress=${encodeURIComponent(walletAddress)}`
+  );
+
+  if (!res.ok) {
+    throw new Error('failed to fetch eligibility');
+  }
+
+  return res.json();
+}
+
 export function calculatePaymentAmount(
   usdPrice: number,
   paymentMethod: 'usdc' | 'sol' | 'skr',
-  prices: PriceData
+  prices: PriceData,
+  skrDiscountEligible = false
 ): { amount: number; display: string } {
+  const effectiveUsdPrice =
+    paymentMethod === 'skr' && skrDiscountEligible ? usdPrice / 2 : usdPrice;
+
   switch (paymentMethod) {
     case 'usdc':
-      return { amount: usdPrice, display: `${usdPrice.toFixed(2)} usdc` };
+      return { amount: effectiveUsdPrice, display: `${effectiveUsdPrice.toFixed(2)} usdc` };
     case 'sol': {
-      const solAmount = usdPrice / prices.solUsd;
+      const solAmount = effectiveUsdPrice / prices.solUsd;
       return { amount: solAmount, display: `${solAmount.toFixed(4)} sol` };
     }
     case 'skr': {
-      const skrAmount = usdPrice / prices.skrUsd;
+      const skrAmount = effectiveUsdPrice / prices.skrUsd;
       return { amount: skrAmount, display: `${skrAmount.toFixed(2)} skr` };
     }
   }

@@ -98,17 +98,21 @@ export async function buildPaymentTransaction(
   fromPubkey: PublicKey,
   paymentMethod: 'usdc' | 'sol' | 'skr',
   usdAmount: number,
-  prices: { solUsd: number; skrUsd: number }
+  prices: { solUsd: number; skrUsd: number },
+  skrDiscountEligible = false
 ): Promise<Transaction> {
+  const effectiveUsdAmount =
+    paymentMethod === 'skr' && skrDiscountEligible ? usdAmount / 2 : usdAmount;
+
   switch (paymentMethod) {
     case 'sol': {
-      const solAmount = usdAmount / prices.solUsd;
+      const solAmount = effectiveUsdAmount / prices.solUsd;
       return buildSolPaymentTransaction(fromPubkey, solAmount);
     }
     case 'usdc':
-      return buildTokenPaymentTransaction(fromPubkey, 'usdc', usdAmount);
+      return buildTokenPaymentTransaction(fromPubkey, 'usdc', effectiveUsdAmount);
     case 'skr': {
-      const skrAmount = usdAmount / prices.skrUsd;
+      const skrAmount = effectiveUsdAmount / prices.skrUsd;
       return buildTokenPaymentTransaction(fromPubkey, 'skr', skrAmount);
     }
   }

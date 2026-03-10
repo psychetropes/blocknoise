@@ -8,6 +8,7 @@ import { voteRouter } from './routes/vote';
 import { radioRouter } from './routes/radio';
 import { priceRouter } from './routes/price';
 import { genresRouter } from './routes/genres';
+import { eligibilityRouter } from './routes/eligibility';
 import { rateLimiter, generateLimiter } from './middleware/rate-limit';
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.use('/vote', voteRouter);
 app.use('/radio', radioRouter);
 app.use('/price', priceRouter);
 app.use('/genres', genresRouter);
+app.use('/eligibility', eligibilityRouter);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'blocknoise-api' });

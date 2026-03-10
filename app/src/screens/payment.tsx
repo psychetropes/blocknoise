@@ -3,7 +3,13 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Animated, StyleSheet }
 import Svg, { Polygon, Line, Rect } from 'react-native-svg';
 import { colors, typography } from '../theme';
 import { useAppStore } from '../store';
-import { fetchPrices, calculatePaymentAmount, type PriceData } from '../services/pricing';
+import {
+  fetchPrices,
+  fetchDiscountEligibility,
+  calculatePaymentAmount,
+  type DiscountEligibility,
+  type PriceData,
+} from '../services/pricing';
 import { ScreenFrame } from '../components/screen-frame';
 import { DEMO_PRICES } from '../demo';
 
@@ -96,6 +102,10 @@ function PaymentCard({
 export function PaymentScreen({ navigation }: { navigation: any }) {
   const { wallet, generation, setGeneration } = useAppStore();
   const [prices, setPrices] = useState<PriceData | null>(null);
+  const [eligibility, setEligibility] = useState<DiscountEligibility>({
+    domain: null,
+    skrDiscountEligible: false,
+  });
   const [selectedPayment, setSelectedPayment] = useState<'usdc' | 'sol' | 'skr'>('usdc');
 
   const shortWallet = wallet.publicKey
@@ -106,6 +116,17 @@ export function PaymentScreen({ navigation }: { navigation: any }) {
     fetchPrices().then(setPrices).catch(() => setPrices(null));
   }, []);
 
+  useEffect(() => {
+    if (!wallet.publicKey) {
+      setEligibility({ domain: null, skrDiscountEligible: false });
+      return;
+    }
+
+    fetchDiscountEligibility(wallet.publicKey.toBase58())
+      .then(setEligibility)
+      .catch(() => setEligibility({ domain: null, skrDiscountEligible: false }));
+  }, [wallet.publicKey]);
+
   const usdPrice = generation.tier === 'pro' ? 20 : 10;
 
   const getPaymentAmount = (method: 'usdc' | 'sol' | 'skr') => {
@@ -113,7 +134,8 @@ export function PaymentScreen({ navigation }: { navigation: any }) {
     return calculatePaymentAmount(
       usdPrice,
       method,
-      priceSource
+      priceSource,
+      eligibility.skrDiscountEligible
     ).display.replace(/ (usdc|sol|skr)$/i, '');
   };
 
@@ -139,7 +161,13 @@ export function PaymentScreen({ navigation }: { navigation: any }) {
               onPress={() => setSelectedPayment(method)}
               label={method.toUpperCase()}
               amount={getPaymentAmount(method)}
-              note={method === 'skr' ? '50% OFF' : undefined}
+              note={
+                method === 'skr'
+                  ? eligibility.skrDiscountEligible
+                    ? '50% OFF'
+                    : 'SNS REQUIRED'
+                  : undefined
+              }
             />
           </View>
         ))}

@@ -6,16 +6,37 @@ import { WalletConnect } from '../components/wallet-connect';
 import { RecessButton } from '../components/recess-button';
 import { BrandTitle } from '../components/brand-title';
 import { ScreenFrame } from '../components/screen-frame';
-import { fetchPrices, calculatePaymentAmount, type PriceData } from '../services/pricing';
+import {
+  fetchPrices,
+  fetchDiscountEligibility,
+  calculatePaymentAmount,
+  type DiscountEligibility,
+  type PriceData,
+} from '../services/pricing';
 import { DEMO_PRICES } from '../demo';
 
 export function HomeScreen({ navigation }: { navigation: any }) {
   const { wallet, setGeneration } = useAppStore();
   const [prices, setPrices] = useState<PriceData>(DEMO_PRICES);
+  const [eligibility, setEligibility] = useState<DiscountEligibility>({
+    domain: null,
+    skrDiscountEligible: false,
+  });
 
   useEffect(() => {
     fetchPrices().then(setPrices).catch(() => setPrices(DEMO_PRICES));
   }, []);
+
+  useEffect(() => {
+    if (!wallet.publicKey) {
+      setEligibility({ domain: null, skrDiscountEligible: false });
+      return;
+    }
+
+    fetchDiscountEligibility(wallet.publicKey.toBase58())
+      .then(setEligibility)
+      .catch(() => setEligibility({ domain: null, skrDiscountEligible: false }));
+  }, [wallet.publicKey]);
 
   const handleGenerate = (tier: 'standard' | 'pro') => {
     setGeneration({
@@ -37,7 +58,12 @@ export function HomeScreen({ navigation }: { navigation: any }) {
     : '';
 
   const getDisplayAmount = (usdPrice: number, method: 'usdc' | 'sol' | 'skr') =>
-    calculatePaymentAmount(usdPrice, method, prices).display.replace(/ (usdc|sol|skr)$/i, '');
+    calculatePaymentAmount(
+      usdPrice,
+      method,
+      prices,
+      eligibility.skrDiscountEligible
+    ).display.replace(/ (usdc|sol|skr)$/i, '');
 
   if (!wallet.connected) {
     return (

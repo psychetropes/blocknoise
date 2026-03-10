@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAppStore } from '../store';
 import { useWallet } from './use-wallet';
 import { getConnection, buildPaymentTransaction } from '../services/solana';
-import { fetchPrices } from '../services/pricing';
+import { fetchDiscountEligibility, fetchPrices } from '../services/pricing';
 import { config } from '../config';
 
 export function usePayment() {
@@ -34,12 +34,14 @@ export function usePayment() {
 
         const connection = getConnection();
         const prices = await fetchPrices();
+        const eligibility = await fetchDiscountEligibility(wallet.publicKey.toBase58());
         const usdAmount = generation.tier === 'pro' ? 20 : 10;
         const transaction = await buildPaymentTransaction(
           wallet.publicKey,
           paymentMethod,
           usdAmount,
-          prices
+          prices,
+          eligibility.skrDiscountEligible
         );
 
         const signature = await signAndSendTransaction(transaction, connection);
